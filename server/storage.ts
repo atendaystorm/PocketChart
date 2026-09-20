@@ -15,7 +15,11 @@ import { and, eq, isNull, inArray } from "drizzle-orm";
 export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-
+}
+async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+  const [updated] = await db.update(users).set(user).where(eq(users.id, id)).returning();
+  return updated;
+}
   getLeagues(userId: number): Promise<League[]>;
   upsertLeague(userId: number, name: string, imageUrl: string): Promise<League>;
 
