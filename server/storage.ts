@@ -61,10 +61,15 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(user: InsertUser): Promise<User> {
+ async createUser(user: InsertUser): Promise<User> {
     const [created] = await db.insert(users).values(user).returning();
     return created;
-  }
+}
+
+async updateUser(id: number, user: Partial<InsertUser>): Promise<User> {
+    const [updated] = await db.update(users).set(user).where(eq(users.id, id)).returning();
+    return updated;
+}
 
   async getLeagues(userId: number): Promise<League[]> {
     return await db.select().from(leagues).where(eq(leagues.userId, userId));
