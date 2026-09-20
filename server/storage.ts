@@ -15,7 +15,6 @@ import { and, eq, isNull, inArray } from "drizzle-orm";
 export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-}
   getLeagues(userId: number): Promise<League[]>;
   upsertLeague(userId: number, name: string, imageUrl: string): Promise<League>;
 
