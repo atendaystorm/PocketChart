@@ -20,10 +20,12 @@ export async function registerRoutes(
   // Seed admin user from env vars and claim any orphaned teams
   const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pocketroster";
-  let adminUser = await storage.getUserByUsername(ADMIN_USERNAME);
-  if (!adminUser) {
-    adminUser = await storage.createUser({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD });
-  }
+ let adminUser = await storage.getUserByUsername(ADMIN_USERNAME);
+if (!adminUser) {
+  adminUser = await storage.createUser({ username: ADMIN_USERNAME, password: ADMIN_PASSWORD });
+} else if (adminUser.password !== ADMIN_PASSWORD) {
+  adminUser = await storage.updateUser(adminUser.id, { password: ADMIN_PASSWORD });
+}
   await storage.claimOrphanedTeams(adminUser.id);
 
   app.post("/api/auth/signup", async (req, res) => {
