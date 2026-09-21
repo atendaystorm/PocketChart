@@ -1,7 +1,16 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { useTeam, useDeleteTeam } from "@/hooks/use-teams";
-import { ArrowLeft, UserPlus, Pencil, Trash2, Shield, MoreVertical, Trophy, ActivitySquare, Camera, Plus, ChevronLeft, ChevronRight, BarChart3, Shirt } from "lucide-react";
+import { ArrowLeft, UserPlus, Pencil, Trash2, Shield, MoreVertical, Trophy, ActivitySquare, Camera, Plus, ChevronLeft, ChevronRight, BarChart3, Shirt, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -428,12 +437,18 @@ export default function TeamDetails() {
   const deleteTeam = useDeleteTeam();
   const { isAdmin } = useAuth();
 
+  const queryClient = useQueryClient();
+const { toast } = useToast();
+
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
   const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
   const [isAddSeasonRecordOpen, setIsAddSeasonRecordOpen] = useState(false);
   const [isAddDepthChartOpen, setIsAddDepthChartOpen] = useState(false);
+  const [isDuplicateDepthChartOpen, setIsDuplicateDepthChartOpen] = useState(false);
+  const [duplicateSourceSeason, setDuplicateSourceSeason] = useState("");
+const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("");
 
   const { data: momentsRaw, isLoading: momentsLoading } = useQuery<Moment[]>({
     queryKey: ["/api/teams", id, "moments"],
@@ -450,6 +465,76 @@ export default function TeamDetails() {
     enabled: !!id,
   });
   const depthChartEntries: DepthChartEntry[] = Array.isArray(depthChartRaw) ? depthChartRaw : [];
+  const duplicateDepthChartMutation = useMutation({
+  mutationFn: async () => {
+    const sourceSeason = Number(duplicateSourceSeason);
+    const destinationSeason = Number(duplicateDestinationSeason);
+
+    if (!duplicateSourceSeason) {
+      throw new Error("Select a source season.");
+    }
+
+    if (
+      !duplicateDestinationSeason ||
+      !Number.isInteger(destinationSeason) ||
+      destinationSeason < 0
+    ) {
+      throw new Error("Enter a valid destination season.");
+    }
+
+    if (sourceSeason === destinationSeason) {
+      throw new Error("The destination season must be different from the source season.");
+    }
+
+    const sourceEntries = depthChartEntries.filter(
+      entry => entry.season === sourceSeason
+    );
+
+    if (sourceEntries.length === 0) {
+      throw new Error("No depth chart entries were found for that season.");
+    }
+
+    const response = await apiRequest(
+      "POST",
+      `/api/teams/${id}/depth-chart`,
+      {
+        season: destinationSeason,
+        entries: sourceEntries.map(entry => ({
+          position: entry.position,
+          playerName: entry.playerName,
+          classYear: entry.classYear,
+          overallRating: entry.overallRating,
+          isRedshirted: entry.isRedshirted,
+        })),
+      },
+    );
+
+    return response.json();
+  },
+
+  onSuccess: () => {
+    queryClient.invalidateQueries({
+      queryKey: ["/api/teams", id, "depth-chart"],
+    });
+
+    toast({
+      title: "Depth chart duplicated",
+      description: `The ${duplicateSourceSeason} depth chart was copied to ${duplicateDestinationSeason}.`,
+    });
+
+    setDuplicateSourceSeason("");
+    setDuplicateDestinationSeason("");
+    setIsDuplicateDepthChartOpen(false);
+  },
+
+  onError: (err: Error) => {
+    toast({
+      title: "Unable to duplicate depth chart",
+      description: err.message,
+      variant: "destructive",
+    });
+  },
+});
 
   if (isLoading) {
     return (
@@ -717,45 +802,137 @@ export default function TeamDetails() {
                   <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#D4AF37]" /> More than 12 games</span>
                 </div>
               </div>
-            ) : (
-              <div className="py-8 text-center text-muted-foreground">
-                <BarChart3 className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                <p className="font-medium">No season records yet.</p>
-                <p className="text-sm mt-1">
-                  {isAdmin ? 'Add the school’s first season record above.' : "Check back soon for the school's season history."}
-                </p>
-              </div>
-            )}
+) : (
+  <div className="py-8 text-center text-muted-foreground">
+    <p className="font-medium">No season records yet.</p>
+    <p className="text-sm mt-1">
+      {isAdmin
+        ? "Add the school’s first season record above."
+        : "Check back soon for the school's season history."}
+    </p>
+  </div>
+)}
           </CardContent>
         </Card>
 
-        {/* Depth chart archive */}
+        {/* Depth Chart Archive */}
         <Card className="shadow-sm border-primary/10">
           <CardHeader className="bg-primary/5 pb-4 border-b">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                  <Shield className="h-5 w-5" />
+                  <Shirt className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-display tracking-wide">Depth Chart</h2>
-                  <p className="text-sm text-muted-foreground">Archived rosters organized by year</p>
+                  <h2 className="text-2xl font-bold text-display tracking-wide">Depth Chart Archive</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Yearly depth charts and roster history
+                  </p>
                 </div>
               </div>
+
               {isAdmin && (
-                <Dialog open={isAddDepthChartOpen} onOpenChange={setIsAddDepthChartOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-2 hover-elevate">
-                      <Plus className="h-4 w-4" /> Upload Roster
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[720px]">
-                    <DialogHeader>
-                      <DialogTitle className="text-display text-2xl tracking-wide">Upload Roster</DialogTitle>
-                    </DialogHeader>
-                    <DepthChartForm teamId={team.id} onSuccess={() => setIsAddDepthChartOpen(false)} />
-                  </DialogContent>
-                </Dialog>
+                <div className="flex items-center gap-2">
+                  <Dialog
+                    open={isDuplicateDepthChartOpen}
+                    onOpenChange={setIsDuplicateDepthChartOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="gap-2 hover-elevate">
+                        <Copy className="h-4 w-4" /> Duplicate Depth Chart
+                      </Button>
+                    </DialogTrigger>
+
+                    <DialogContent className="sm:max-w-[500px]">
+                      <DialogHeader>
+                        <DialogTitle className="text-display text-2xl tracking-wide">
+                          Duplicate Depth Chart
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <div className="space-y-5">
+                        <p className="text-sm text-muted-foreground">
+                          Copy a depth chart from one season into another season. Only the depth chart players and their settings will be copied.
+                        </p>
+
+                        <div className="space-y-2">
+                          <Label>Source Season</Label>
+                          <Select
+                            value={duplicateSourceSeason}
+                            onValueChange={setDuplicateSourceSeason}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select source season" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {depthChartSeasons.map(season => (
+                                <SelectItem key={season} value={String(season)}>
+                                  {season}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Destination Season</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="e.g. 2027"
+                            value={duplicateDestinationSeason}
+                            onChange={event => setDuplicateDestinationSeason(event.target.value)}
+                          />
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setIsDuplicateDepthChartOpen(false)}
+                          >
+                            Cancel
+                          </Button>
+
+                          <Button
+                            type="button"
+                            className="gap-2"
+                            onClick={() => duplicateDepthChartMutation.mutate()}
+                            disabled={duplicateDepthChartMutation.isPending}
+                          >
+                            <Copy className="h-4 w-4" />
+                            {duplicateDepthChartMutation.isPending ? "Duplicating..." : "Duplicate"}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
+                  <Dialog
+                    open={isAddDepthChartOpen}
+                    onOpenChange={setIsAddDepthChartOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button className="gap-2 hover-elevate">
+                        <Plus className="h-4 w-4" /> Upload Roster
+                      </Button>
+                    </DialogTrigger>
+
+                    <DialogContent className="sm:max-w-[720px]">
+                      <DialogHeader>
+                        <DialogTitle className="text-display text-2xl tracking-wide">
+                          Upload Roster
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <DepthChartForm
+                        teamId={team.id}
+                        onSuccess={() => setIsAddDepthChartOpen(false)}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
           </CardHeader>
