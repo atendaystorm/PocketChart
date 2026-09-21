@@ -170,10 +170,29 @@ export function PlayerForm({ player, teamId, onSuccess }: PlayerFormProps) {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="position">Position</Label>
-          <Input id="position" placeholder="QB, WR, LB..." {...form.register("position")} />
-        </div>
+    <div className="space-y-2" >
+        <Label htmlFor="position" > Position </Label>
+            < Select
+onValueChange = {(val) => form.setValue("position", val)}
+defaultValue = { form.getValues("position") }
+    >
+    <SelectTrigger id="position" >
+        <SelectValue placeholder="Select position" />
+            </SelectTrigger>
+            < SelectContent >
+            <SelectItem value="QB" > QB </SelectItem>
+                < SelectItem value = "RB" > RB </SelectItem>
+                    < SelectItem value = "FB" > FB </SelectItem>
+                        < SelectItem value = "TE" > TE </SelectItem>
+                            < SelectItem value = "WR" > WR </SelectItem>
+                                < SelectItem value = "OL" > OL </SelectItem>
+                                    < SelectItem value = "DL" > DL </SelectItem>
+                                        < SelectItem value = "EDGE" > EDGE </SelectItem>
+                                            < SelectItem value = "LB" > LB </SelectItem>
+                                                < SelectItem value = "DB" > DB </SelectItem>
+                                                    </SelectContent>
+                                                    </Select>
+                                                    </div>
         <div className="space-y-2">
           <Label htmlFor="jerseyNumber">Jersey #</Label>
           <Input id="jerseyNumber" type="number" {...form.register("jerseyNumber")} />
