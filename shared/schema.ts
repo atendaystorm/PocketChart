@@ -39,9 +39,10 @@ export const depthChartPositionSchema = z.enum(DEPTH_CHART_POSITIONS);
 export type DepthChartPosition = z.infer<typeof depthChartPositionSchema>;
 
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+    id: serial("id").primaryKey(),
+    username: text("username").notNull().unique(),
+    email: text("email").unique(),
+    password: text("password").notNull(),
 });
 
 export const leagues = pgTable("leagues", {
