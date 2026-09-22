@@ -45,6 +45,23 @@ export const users = pgTable("users", {
     password: text("password").notNull(),
 });
 
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id").notNull(),
+    token: text("token").notNull().unique(),
+    expiresAt: text("expires_at").notNull(),
+    used: boolean("used").notNull().default(false),
+});
+
+export const insertPasswordResetTokenSchema =
+    createInsertSchema(passwordResetTokens).omit({ id: true });
+
+export type PasswordResetToken =
+    typeof passwordResetTokens.$inferSelect;
+
+export type InsertPasswordResetToken =
+    z.infer<typeof insertPasswordResetTokenSchema>;
+
 export const leagues = pgTable("leagues", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),

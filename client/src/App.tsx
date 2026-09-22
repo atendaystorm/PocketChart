@@ -7,7 +7,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AuthProvider } from "@/context/auth-context";
 import NotFound from "@/pages/not-found";
-
+import ResetPassword from "@/pages/reset-password";
 import Dashboard from "./pages/dashboard";
 import TeamDetails from "./pages/team-details";
 import Leagues from "./pages/leagues";
@@ -21,8 +21,9 @@ function Router() {
       <Route path="/teams/:id" component={TeamDetails}/>
       <Route path="/leagues" component={Leagues}/>
       <Route path="/players" component={Players}/>
-      <Route path="/players/:id" component={PlayerDetails}/>
-      <Route component={NotFound} />
+        <Route path="/players/:id" component = { PlayerDetails } />
+        <Route path = "/reset-password" component = { ResetPassword } />
+        <Route component={ NotFound } />
     </Switch>
   );
 }

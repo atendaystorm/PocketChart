@@ -13,17 +13,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 function AuthScreen() {
   const { login, isLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+    const [mode, setMode] = useState<"login" | "signup">("login");
+    const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Login state
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
-    setUsername("");
+      setUsername("");
+      setEmail("");
     setPassword("");
     setConfirmPassword("");
     setError("");
@@ -43,6 +46,34 @@ function AuthScreen() {
     if (!result.success) setError(result.message || "Invalid credentials");
   };
 
+    const handleForgotPassword = async () => {
+        setError("");
+        setSubmitting(true);
+
+        try {
+            const res = await fetch("/api/auth/forgot-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                setError(data.message || "Unable to create reset link.");
+                return;
+            }
+
+            setError(data.message || "Reset link created. Check the server console.");
+        } catch {
+            setError("Unable to connect to the server.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -54,7 +85,7 @@ function AuthScreen() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ username, password }),
+        body: JSON.stringify({ username, email, password }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -90,7 +121,51 @@ function AuthScreen() {
 
         <Card className="shadow-sm">
           <CardContent className="pt-6">
-            {mode === "login" ? (
+{    showForgotPassword?(
+  <div>
+    <div className="space-y-4" >
+        <div>
+        <h2 className="text-xl font-bold" > Reset Password </h2>
+            < p className = "text-sm text-muted-foreground" >
+    Enter your email to reset your password. 
+    </p>
+                    </div>
+
+                    < div className = "space-y-2" >
+    <div className="space-y-2" >
+        <Label htmlFor="reset-email" > Email </Label>
+            < Input
+id = "reset-email"
+type = "email"
+value = { email }
+onChange = { e => setEmail(e.target.value) }
+placeholder = "Enter your email"
+autoComplete = "email"
+    />
+    </div>
+    </div>
+
+    < Button
+type = "button"
+className = "w-full font-semibold"
+onClick = { handleForgotPassword }
+disabled = { submitting || !email.trim()}
+>
+{ submitting? "Sending…": "Reset Password" }
+    </Button>
+    < p className = "text-center text-sm text-muted-foreground" >
+        Remember your password ? { " "}
+            < button
+    type = "button"
+onClick = {() => setShowForgotPassword(false)}
+className = "text-primary font-semibold hover:underline"
+    >
+    Sign in
+    </button>
+    </p>
+            </div>
+            </div>
+) : mode === "login" ? (
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-username">Username</Label>
@@ -101,7 +176,16 @@ function AuthScreen() {
                     placeholder="Enter username"
                     autoComplete="username"
                     autoFocus
-                  />
+                        />
+    <p className="text-right text-sm" >
+        <button
+    type="button"
+onClick = {() => setShowForgotPassword(true)}
+className = "text-primary font-semibold hover:underline"
+    >
+    Forgot Password ?
+        </button>
+        </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Password</Label>
@@ -126,18 +210,30 @@ function AuthScreen() {
                 </p>
               </form>
             ) : (
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">Username</Label>
-                  <Input
-                    id="signup-username"
-                    value={username}
-                    onChange={e => setUsername(e.target.value)}
-                    placeholder="Choose a username"
-                    autoComplete="username"
-                    autoFocus
-                  />
-                </div>
+    <form onSubmit= { handleSignup } className = "space-y-4" >
+        <div className="space-y-2" >
+            <Label htmlFor="signup-username" > Username </Label>
+                < Input
+id = "signup-username"
+value = { username }
+onChange = { e => setUsername(e.target.value) }
+placeholder = "Choose a username"
+autoComplete = "username"
+autoFocus
+    />
+    </div>
+
+    < div className = "space-y-2" >
+        <Label htmlFor="signup-email" > Email </Label>
+            < Input
+id = "signup-email"
+type = "email"
+value = { email }
+onChange = { e => setEmail(e.target.value) }
+placeholder = "Enter your email"
+autoComplete = "email"
+    />
+    </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
                   <Input

@@ -4,6 +4,15 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { depthChartPositionSchema, playerClassYearSchema, playerDevTraitSchema, playerStatusSchema } from "@shared/schema";
 import { z } from "zod";
+import crypto from "crypto";
+import { db } from "./db";
+import { Resend } from "resend";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
+
+const resend = process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
   if (!req.session.userId) {
@@ -26,41 +35,151 @@ export async function registerRoutes(
   }
   await storage.claimOrphanedTeams(adminUser.id);
 
-  app.post("/api/auth/signup", async (req, res) => {
-    const { username, password } = req.body;
-    if (!username || typeof username !== "string" || username.trim().length < 3) {
-      return res.status(400).json({ message: "Username must be at least 3 characters." });
-    }
-    if (!password || typeof password !== "string" || password.length < 6) {
-      return res.status(400).json({ message: "Password must be at least 6 characters." });
-    }
-    const clean = username.trim();
-    const existing = await storage.getUserByUsername(clean);
-    if (existing) {
-      return res.status(409).json({ message: "That username is already taken." });
-    }
-    const user = await storage.createUser({ username: clean, password });
-    req.session.userId = user.id;
-    req.session.username = user.username;
-    res.status(201).json({ isAdmin: true, userId: user.id, username: user.username });
-  });
+    app.post("/api/auth/signup", async (req, res) => {
+        const { username, email, password } = req.body;
 
-  app.post("/api/auth/login", async (req, res) => {
-    const { username, password } = req.body;
-    const user = await storage.getUserByUsername(username);
-    if (!user || user.password !== password) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-    req.session.userId = user.id;
-    req.session.username = user.username;
-    res.json({ isAdmin: true, userId: user.id, username: user.username });
-  });
+        if (!email || typeof email !== "string" || !email.includes("@")) {
+            return res.status(400).json({ message: "A valid email is required." });
+        }
 
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy(() => {
-      res.json({ ok: true });
+        const clean = username.trim();
+        const cleanEmail = email.trim().toLowerCase();
+
+        const existing = await storage.getUserByUsername(clean);
+        const existingEmail = await storage.getUserByEmail(cleanEmail);
+        if (existing) {
+            return res.status(409).json({ message: "That username is already taken." });
+        }
+
+        if (existingEmail) {
+            return res.status(409).json({ message: "That email is already registered." });
+        }
+        const user = await storage.createUser({
+            username: clean,
+            email: cleanEmail,
+            password,
+        });
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        res.status(201).json({ isAdmin: true, userId: user.id, username: user.username });
     });
-  });
+
+    app.post("/api/auth/login", async (req, res) => {
+        const { username, password } = req.body;
+        const user = await storage.getUserByUsername(username);
+        if (!user || user.password !== password) {
+            return res.status(401).json({ message: "Invalid credentials" });
+        }
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        res.json({ isAdmin: true, userId: user.id, username: user.username });
+    });
+
+    app.post("/api/auth/forgot-password", async (req, res) => {
+        const { email } = req.body;
+
+        if (!email || typeof email !== "string") {
+            return res.status(400).json({ message: "Email is required." });
+        }
+
+        const cleanEmail = email.trim().toLowerCase();
+        const user = await storage.getUserByEmail(cleanEmail);
+
+        if (!user) {
+            return res.json({
+                message: "If an account exists with that email, a reset link has been created.",
+            });
+        }
+
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+        await storage.createPasswordResetToken({
+            userId: user.id,
+            token,
+            expiresAt,
+            used: false,
+        });
+
+        const resetUrl = `http://localhost:5000/reset-password?token=${token}`;
+
+        if (resend) {
+            const { error } = await resend.emails.send({
+                from: "PocketRoster <onboarding@resend.dev>",
+                to: cleanEmail,
+                subject: "Reset your PocketRoster password",
+                html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Reset Your PocketRoster Password</h2>
+        <p>We received a request to reset your PocketRoster password.</p>
+        <p>Click the button below to choose a new password:</p>
+        <p>
+          <a
+            href="${resetUrl}"
+            style="display: inline-block; padding: 12px 20px; background: #111827; color: white; text-decoration: none; border-radius: 6px;"
+          >
+            Reset Password
+          </a>
+        </p>
+        <p>This link will expire in 1 hour.</p>
+        <p>If you didn't request a password reset, you can safely ignore this email.</p>
+      </div>
+    `,
+            });
+
+            if (error) {
+                console.error("[PASSWORD RESET EMAIL ERROR]", error);
+            }
+        } else {
+            console.log(`[PASSWORD RESET] ${resetUrl}`);
+        }
+        return res.json({
+            message: "If an account exists with that email, a reset link has been created.",
+        });
+    });
+
+    app.post("/api/auth/reset-password", async (req, res) => {
+        const { token, password } = req.body;
+
+        if (!token || typeof token !== "string") {
+            return res.status(400).json({ message: "Reset token is required." });
+        }
+
+        if (!password || typeof password !== "string" || password.length < 6) {
+            return res.status(400).json({
+                message: "Password must be at least 6 characters.",
+            });
+        }
+
+        const resetToken = await storage.getPasswordResetToken(token);
+
+        if (
+            !resetToken ||
+            resetToken.used ||
+            new Date(resetToken.expiresAt) < new Date()
+        ) {
+            return res.status(400).json({
+                message: "This password reset link is invalid or expired.",
+            });
+        }
+
+        await db
+            .update(users)
+            .set({ password })
+            .where(eq(users.id, resetToken.userId));
+
+        await storage.markPasswordResetTokenUsed(resetToken.id);
+
+        return res.json({
+            message: "Your password has been reset successfully.",
+        });
+    });
+
+    app.post("/api/auth/logout", (req, res) => {
+        req.session.destroy(() => {
+            res.json({ ok: true });
+        });
+    });
 
   app.get("/api/auth/me", (req, res) => {
     if (req.session.userId) {

@@ -1,10 +1,10 @@
 import { db } from "./db";
 import {
-  teams, players, playerStats, users, leagues, moments, seasonRecords, depthChartEntries,
+    teams, players, playerStats, users, passwordResetTokens, leagues, moments, seasonRecords, depthChartEntries,
   type Team, type InsertTeam, type UpdateTeamRequest, type TeamWithPlayers,
   type Player, type InsertPlayer, type UpdatePlayerRequest, type PlayerWithStats,
   type PlayerStat, type InsertPlayerStat, type UpdatePlayerStatRequest,
-  type User, type InsertUser,
+    type User, type InsertUser, type PasswordResetToken, type InsertPasswordResetToken,
   type League,
   type Moment, type InsertMoment, type UpdateMomentRequest,
   type SeasonRecord, type InsertSeasonRecord, type UpdateSeasonRecordRequest,
@@ -14,7 +14,11 @@ import { and, eq, isNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+    createUser(user: InsertUser): Promise<User>;
+    getUserByEmail(email: string): Promise<User | undefined>;
+    createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
+    getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+    markPasswordResetTokenUsed(id: number): Promise<void>;
 
   getLeagues(userId: number): Promise<League[]>;
   upsertLeague(userId: number, name: string, imageUrl: string): Promise<League>;
@@ -61,6 +65,39 @@ export class DatabaseStorage implements IStorage {
     const [created] = await db.insert(users).values(user).returning();
     return created;
   }
+
+    async getUserByEmail(email: string): Promise<User | undefined> {
+        const [user] = await db.select().from(users).where(eq(users.email, email));
+        return user;
+    }
+
+    async createPasswordResetToken(
+        token: InsertPasswordResetToken
+    ): Promise<PasswordResetToken> {
+        const [created] = await db
+            .insert(passwordResetTokens)
+            .values(token)
+            .returning();
+        return created;
+    }
+
+    async getPasswordResetToken(
+        token: string
+    ): Promise<PasswordResetToken | undefined> {
+        const [resetToken] = await db
+            .select()
+            .from(passwordResetTokens)
+            .where(eq(passwordResetTokens.token, token));
+
+        return resetToken;
+    }
+
+    async markPasswordResetTokenUsed(id: number): Promise<void> {
+        await db
+            .update(passwordResetTokens)
+            .set({ used: true })
+            .where(eq(passwordResetTokens.id, id));
+    }
 
   async getLeagues(userId: number): Promise<League[]> {
     return await db.select().from(leagues).where(eq(leagues.userId, userId));
