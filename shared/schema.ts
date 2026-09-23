@@ -166,6 +166,7 @@ export const depthChartEntries = pgTable("depth_chart_entries", {
   classYear: varchar("class_year", { length: 20 }).default("Senior").notNull(),
   overallRating: integer("overall_rating").default(0).notNull(),
   isRedshirted: boolean("is_redshirted").default(false).notNull(),
+  devTrait: varchar("dev_trait", { length: 20 }).default("Normal").notNull(),
 });
 
 export const teamsRelations = relations(teams, ({ many }) => ({

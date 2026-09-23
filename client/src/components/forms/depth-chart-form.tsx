@@ -13,6 +13,7 @@ import {
   type DepthChartEntry,
   type DepthChartPosition,
   type PlayerClassYear,
+  type PlayerDevTrait,
 } from "@shared/schema";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
@@ -21,6 +22,7 @@ type RosterPlayer = {
   classYear: PlayerClassYear;
   overallRating: number;
   isRedshirted: boolean;
+  devTrait: PlayerDevTrait;
 };
 
 type DepthChartFormProps = {
@@ -37,9 +39,10 @@ function buildRoster(entries: DepthChartEntry[]): Record<DepthChartPosition, Ros
       .filter(entry => entry.position === position)
       .map(entry => ({
         playerName: entry.playerName,
-        classYear: (entry.classYear || "Senior") as PlayerClassYear,
+        classYear: (entry.classYear || "Freshman") as PlayerClassYear,
         overallRating: entry.overallRating || 0,
         isRedshirted: entry.isRedshirted || false,
+        devTrait: (entry.devTrait || "Normal") as PlayerDevTrait,
       }));
   }
   return roster;
@@ -71,12 +74,13 @@ export function DepthChartForm({ teamId, season: initialSeason, entries = [], on
       const entriesToSave = DEPTH_CHART_POSITIONS.flatMap(position =>
         roster[position]
           .map(player => ({
-            position,
-            playerName: player.playerName.trim(),
-            classYear: player.classYear,
-            overallRating: player.overallRating,
-            isRedshirted: player.isRedshirted,
-          }))
+  position,
+  playerName: player.playerName.trim(),
+  classYear: player.classYear,
+  overallRating: player.overallRating,
+  isRedshirted: player.isRedshirted,
+  devTrait: player.devTrait,
+}))
           .filter(player => player.playerName),
       );
 
@@ -137,9 +141,10 @@ export function DepthChartForm({ teamId, season: initialSeason, entries = [], on
                     ...current,
                     [position]: [...current[position], {
                       playerName: "",
-                      classYear: "Senior",
+                      classYear: "Freshman",
                       overallRating: 0,
                       isRedshirted: false,
+                      devTrait: "Normal",
                     }],
                   }))
                 }
@@ -151,14 +156,17 @@ export function DepthChartForm({ teamId, season: initialSeason, entries = [], on
             {roster[position].length > 0 ? (
               <div className="space-y-2">
                 {roster[position].map((player, index) => (
-                  <div key={`${position}-${index}`} className="grid grid-cols-[20px_minmax(0,1fr)_76px_126px_auto] items-center gap-2">
+                  <div key={`${position}-${index}`} className="grid grid-cols-[20px_minmax(0,1fr)_76px_126px_110px_76px_40px] items-center gap-2">
                     <span className="w-5 shrink-0 text-sm text-muted-foreground text-center">{index + 1}</span>
-                    <Input
-                      aria-label={`${position} player ${index + 1}`}
-                      placeholder="Player name"
-                      value={player.playerName}
-                      onChange={event => updatePlayer(position, index, { playerName: event.target.value })}
-                    />
+                    <div className="flex items-center gap-2 min-w-0">
+  <Input
+    aria-label={`${position} player ${index + 1}`}
+    placeholder="Player name"
+    value={player.playerName}
+    onChange={event => updatePlayer(position, index, { playerName: event.target.value })}
+  />
+
+</div>
                     <Input
                       aria-label={`${position} player ${index + 1} overall rating`}
                       type="number"
@@ -181,7 +189,25 @@ export function DepthChartForm({ teamId, season: initialSeason, entries = [], on
                         ))}
                       </SelectContent>
                     </Select>
-                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap">
+                    <Select
+  value={player.devTrait}
+  onValueChange={value =>
+    updatePlayer(position, index, {
+      devTrait: value as RosterPlayer["devTrait"],
+    })
+  }
+>
+  <SelectTrigger className="w-[110px]" aria-label={`${position} player ${index + 1} dev trait`}>
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="Normal">Normal</SelectItem>
+    <SelectItem value="Impact">Impact</SelectItem>
+    <SelectItem value="Star">Star</SelectItem>
+    <SelectItem value="Elite">Elite</SelectItem>
+  </SelectContent>
+</Select>
+                    <label className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap w-[76px]">
                       <Checkbox
                         checked={player.isRedshirted}
                         onCheckedChange={checked => updatePlayer(position, index, { isRedshirted: checked === true })}

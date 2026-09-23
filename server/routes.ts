@@ -2,12 +2,11 @@ import type { Express, Request, Response, NextFunction } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
-import { depthChartPositionSchema, playerClassYearSchema, playerDevTraitSchema, playerStatusSchema } from "@shared/schema";
-import { z } from "zod";
+import { depthChartPositionSchema, playerClassYearSchema, playerDevTraitSchema, playerStatusSchema, type PlayerDevTrait } from "@shared/schema";import { z } from "zod";
 import crypto from "crypto";
 import { db } from "./db";
 import { Resend } from "resend";
-import { users } from "@shared/schema";
+import { users,} from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const resend = process.env.RESEND_API_KEY
@@ -565,7 +564,8 @@ export async function registerRoutes(
           playerName: z.string().trim().min(1),
           classYear: playerClassYearSchema.default("Senior"),
           overallRating: z.coerce.number().int().min(0).max(99).default(0),
-          isRedshirted: z.boolean().default(false),
+isRedshirted: z.boolean().default(false),
+devTrait: playerDevTraitSchema.default("Normal"),
         })).max(200),
       });
       const input = bodySchema.parse(req.body);

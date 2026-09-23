@@ -103,6 +103,7 @@ export function PlayerForm({ player, teamId, onSuccess }: PlayerFormProps) {
   };
 
   function onSubmit(data: FormValues) {
+    console.log("PLAYER UPDATE DATA:", data);
     if (player) {
       updatePlayer.mutate({ id: player.id, ...data }, { onSuccess });
     } else {
@@ -220,7 +221,7 @@ defaultValue = { form.getValues("position") }
         <Label htmlFor="devTrait">Dev Trait</Label>
         <Select
           onValueChange={(val) => form.setValue("devTrait", val as FormValues["devTrait"])}
-          defaultValue={form.getValues("devTrait")}
+          value={form.watch("devTrait")}
         >
           <SelectTrigger id="devTrait">
             <SelectValue placeholder="Development trait" />

@@ -408,8 +408,15 @@ function DepthChartYear({
                     {playersAtPosition.map(({ entry, profile }, index) => (
                       <li key={`${entry.playerName}-${index}`} className="text-sm font-medium flex items-center gap-2">
                         <span className="text-muted-foreground w-4">{index + 1}.</span>
-                        <span className="min-w-0 flex-1">{entry.playerName}</span>
-                        <span className="text-[11px] text-muted-foreground">{entry.classYear || "Senior"}</span>
+                      <div className="min-w-0 flex-1 flex items-center gap-2">
+  <span>{entry.playerName}</span>
+  <img
+    src={`/dev-traits/${(entry.devTrait || "Normal").toLowerCase()}dev.png`}
+    alt={`${entry.devTrait || "Normal"} development trait`}
+    className="h-6 w-6 shrink-0 object-contain"
+  />
+</div>
+<span className="text-[11px] text-muted-foreground">{entry.classYear || "Senior"}</span>
                         {(entry.isRedshirted || profile?.isRedshirted) && (
                           <Shirt className="h-4 w-4 shrink-0 text-red-600 fill-red-100" aria-label="Redshirted" />
                         )}
