@@ -329,6 +329,7 @@ function DepthChartYear({
   players: Player[];
 }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const deleteMutation = useMutation({
@@ -341,14 +342,22 @@ function DepthChartYear({
 
   return (
     <Card className="shadow-sm border-border/70">
-      <CardHeader className="pb-4 border-b">
+      <CardHeader
+  className="pb-4 border-b cursor-pointer"
+  onClick={() => setIsExpanded(!isExpanded)}
+>
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h3 className="text-xl font-bold text-display tracking-wide">{season} Roster</h3>
+            <div className="flex items-center gap-2">
+  <h3 className="text-xl font-bold text-display tracking-wide">{season} Roster</h3>
+  <span className="text-muted-foreground text-sm">
+    {isExpanded ? "▾" : "▸"}
+  </span>
+</div>
             <p className="text-sm text-muted-foreground">Depth order is listed top to bottom</p>
           </div>
           {isAdmin && (
-            <div className="flex gap-1">
+            <div className="flex gap-1" onClick={event => event.stopPropagation()}>
               <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" aria-label={`Edit ${season} roster`}>
@@ -376,7 +385,8 @@ function DepthChartYear({
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
+      {isExpanded && (
+  <CardContent className="pt-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-5">
           {DEPTH_CHART_POSITIONS.map(position => {
             const entriesAtPosition = entries.filter(entry => entry.position === position);
@@ -430,7 +440,8 @@ function DepthChartYear({
             );
           })}
         </div>
-      </CardContent>
+            </CardContent>
+    )}
     </Card>
   );
 }
@@ -450,6 +461,7 @@ const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("Overview");
   const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
   const [isAddSeasonRecordOpen, setIsAddSeasonRecordOpen] = useState(false);
   const [isAddDepthChartOpen, setIsAddDepthChartOpen] = useState(false);
@@ -587,9 +599,30 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto w-full">
-      <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6">
-        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-      </Link>
+<Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors mb-6">
+  <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+</Link>
+
+<div className="mb-8 overflow-x-auto">
+  <div className="flex min-w-max border-b">
+    {["Overview", "Hall of Fame", "Depth Chart", "Moments"].map(tab => (
+      <button
+        key={tab}
+        type="button"
+        onClick={() => setActiveTab(tab)}
+        className={`px-4 py-3 text-sm font-semibold transition-colors border-b-2 ${
+          activeTab === tab
+            ? "border-primary text-primary"
+            : "border-transparent text-muted-foreground hover:text-foreground"
+        }`}
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
+</div>
+
+{/* Team Hero */}
 
       {/* Team Hero */}
       <div className="relative rounded-2xl bg-card border shadow-sm mb-10 overflow-hidden">
@@ -678,9 +711,9 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
         </div>
       </div>
 
-      {/* Coach + Roster */}
+    {/* Coach + Roster */}
       <div className="space-y-6 mb-10">
-        <Card className="shadow-sm border-primary/10">
+        <Card className={`shadow-sm border-primary/10 ${activeTab !== "Overview" ? "hidden" : ""}`}>
           <CardHeader className="bg-primary/5 pb-4 border-b">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -760,7 +793,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
         </Card>
 
         {/* Season records */}
-        <Card className="shadow-sm border-primary/10">
+        <Card className={`shadow-sm border-primary/10 ${activeTab !== "Overview" ? "hidden" : ""}`}>
           <CardHeader className="bg-primary/5 pb-4 border-b">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -820,10 +853,10 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
   </div>
 )}
           </CardContent>
-        </Card>
+                  </Card>
 
-        {/* Depth Chart Archive */}
-        <Card className="shadow-sm border-primary/10">
+      {/* Depth Chart Archive */}
+        <Card className={`shadow-sm border-primary/10 ${activeTab !== "Depth Chart" ? "hidden" : ""}`}>
           <CardHeader className="bg-primary/5 pb-4 border-b">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
@@ -983,11 +1016,43 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
         </Card>
 
         {/* Hall of Fame roster */}
-        <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
-          <div className="bg-muted/50 p-4 border-b flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-display tracking-wide">Hall of Fame</h2>
-            <p className="text-muted-foreground text-sm font-medium">{team.players?.length || 0} Players</p>
-          </div>
+        <div className={`rounded-2xl border bg-card overflow-hidden shadow-sm ${activeTab !== "Hall of Fame" ? "hidden" : ""}`}>
+          <div className="bg-muted/50 p-4 border-b flex items-center justify-between gap-3">
+  <div className="flex items-center gap-3">
+    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+      <UserPlus className="h-5 w-5" />
+    </div>
+    <div>
+      <h2 className="text-2xl font-bold text-display tracking-wide">Hall of Fame</h2>
+      <p className="text-sm text-muted-foreground">
+        {team.players?.length || 0} Players
+      </p>
+    </div>
+  </div>
+
+  {isAdmin && (
+    <Dialog open={isAddPlayerOpen} onOpenChange={setIsAddPlayerOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-2 hover-elevate">
+          <Plus className="h-4 w-4" /> Add Player
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="text-display text-2xl tracking-wide">
+            Add Player to Hall of Fame
+          </DialogTitle>
+        </DialogHeader>
+
+        <PlayerForm
+          teamId={team.id}
+          onSuccess={() => setIsAddPlayerOpen(false)}
+        />
+      </DialogContent>
+    </Dialog>
+  )}
+</div>
           {team.players && team.players.length > 0 ? (
             <Table>
               <TableHeader className="bg-muted/30">
@@ -1063,28 +1128,10 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
             </div>
           )}
         </div>
-
-        {/* Add Player */}
-        {isAdmin && (
-          <Dialog open={isAddPlayerOpen} onOpenChange={setIsAddPlayerOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full hover-elevate gap-2 h-14 text-lg font-bold text-display">
-                <UserPlus className="h-5 w-5" />
-                <span>Add Player</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle className="text-display text-2xl tracking-wide">Add Player to Hall of Fame</DialogTitle>
-              </DialogHeader>
-              <PlayerForm teamId={team.id} onSuccess={() => setIsAddPlayerOpen(false)} />
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+        </div>
 
       {/* ── Upload a Moment ───────────────────────────────────────────── */}
-      <div className="space-y-6 pb-10">
+      <div className={`space-y-6 pb-10 ${activeTab !== "Moments" ? "hidden" : ""}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
