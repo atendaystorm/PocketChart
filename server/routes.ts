@@ -6,7 +6,7 @@ import { depthChartPositionSchema, playerClassYearSchema, playerDevTraitSchema, 
 import crypto from "crypto";
 import { db } from "./db";
 import { Resend } from "resend";
-import { users,} from "@shared/schema";
+import { users, teamRecords } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const resend = process.env.RESEND_API_KEY
@@ -249,6 +249,21 @@ export async function registerRoutes(
       res.status(404).json({ message: 'Team not found' });
     }
   });
+
+app.delete("/api/teams/:teamId/records/:recordId", requireAuth, async (req, res) => {
+  try {
+    const result = await db
+      .delete(teamRecords)
+      .where(eq(teamRecords.id, Number(req.params.recordId)));
+
+    console.log("RECORD DELETE ROUTE HIT", req.params.recordId);
+console.log("Deleted records:", result.rowCount);
+
+    res.sendStatus(204);
+  } catch (err) {
+    throw err;
+  }
+});
 
   app.delete(api.teams.delete.path, async (req, res) => {
     try {
@@ -514,6 +529,116 @@ export async function registerRoutes(
         ...input,
       });
       res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+    // Team records routes
+  app.get("/api/teams/:teamId/records/:recordType", async (req, res) => {
+    const records = await storage.getTeamRecords(
+      Number(req.params.teamId),
+      req.params.recordType
+    );
+    res.json(records);
+  });
+
+  app.post("/api/teams/:teamId/records", requireAuth, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        recordType: z.enum(["Game", "Season", "Career"]),
+        category: z.enum([
+          "Passing Yards",
+          "Passing Touchdowns",
+          "Rushing Yards",
+          "Rushing Touchdowns",
+          "Receiving Yards",
+          "Receiving Touchdowns",
+          "Sacks",
+          "Interceptions",
+        ]),
+        playerName: z.string().min(1),
+        value: z.coerce.number().int(),
+        season: z.coerce.number().int().min(0),
+      });
+
+      const input = bodySchema.parse(req.body);
+
+      const record = await storage.createTeamRecord({
+        teamId: Number(req.params.teamId),
+        ...input,
+      });
+
+      res.status(201).json(record);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+    // Team awards routes
+  app.get("/api/teams/:teamId/awards/team", async (req, res) => {
+    const awards = await storage.getTeamAwards(Number(req.params.teamId));
+    res.json(awards);
+  });
+
+  app.post("/api/teams/:teamId/awards/team", requireAuth, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        awardType: z.enum([
+          "Conference Championship",
+          "Bowl Victory",
+          "CFP Victory",
+          "National Championship",
+        ]),
+        opponent: z.string().min(1),
+        finalScore: z.string().min(1),
+        season: z.coerce.number().int().min(0),
+      });
+
+      const input = bodySchema.parse(req.body);
+
+      const award = await storage.createTeamAward({
+        teamId: Number(req.params.teamId),
+        ...input,
+      });
+
+      res.status(201).json(award);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      throw err;
+    }
+  });
+
+    // Personal awards routes
+  app.get("/api/teams/:teamId/awards/personal", async (req, res) => {
+    const awards = await storage.getPersonalAwards(Number(req.params.teamId));
+    res.json(awards);
+  });
+
+  app.post("/api/teams/:teamId/awards/personal", requireAuth, async (req, res) => {
+    try {
+      const bodySchema = z.object({
+        playerName: z.string().min(1),
+        award: z.string().min(1),
+        season: z.coerce.number().int().min(0),
+      });
+
+      const input = bodySchema.parse(req.body);
+
+      const award = await storage.createPersonalAward({
+        teamId: Number(req.params.teamId),
+        ...input,
+      });
+
+      res.status(201).json(award);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message });

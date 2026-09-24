@@ -1,6 +1,6 @@
 import { db } from "./db";
 import {
-    teams, players, playerStats, users, passwordResetTokens, leagues, moments, seasonRecords, depthChartEntries,
+    teams, players, playerStats, users, passwordResetTokens, leagues, moments, seasonRecords, depthChartEntries, teamRecords, teamAwards, personalAwards,
   type Team, type InsertTeam, type UpdateTeamRequest, type TeamWithPlayers,
   type Player, type InsertPlayer, type UpdatePlayerRequest, type PlayerWithStats,
   type PlayerStat, type InsertPlayerStat, type UpdatePlayerStatRequest,
@@ -9,6 +9,9 @@ import {
   type Moment, type InsertMoment, type UpdateMomentRequest,
   type SeasonRecord, type InsertSeasonRecord, type UpdateSeasonRecordRequest,
   type DepthChartEntry, type InsertDepthChartEntry,
+  type TeamRecord, type InsertTeamRecord,
+  type TeamAward, type InsertTeamAward,
+  type PersonalAward, type InsertPersonalAward,
 } from "@shared/schema";
 import { and, eq, isNull, inArray } from "drizzle-orm";
 
@@ -16,6 +19,12 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
     createUser(user: InsertUser): Promise<User>;
     getUserByEmail(email: string): Promise<User | undefined>;
+    getTeamRecords(teamId: number, recordType: string): Promise<TeamRecord[]>;
+    createTeamRecord(record: InsertTeamRecord): Promise<TeamRecord>;
+    getTeamAwards(teamId: number): Promise<TeamAward[]>;
+    createTeamAward(award: InsertTeamAward): Promise<TeamAward>;
+    getPersonalAwards(teamId: number): Promise<PersonalAward[]>;
+    createPersonalAward(award: InsertPersonalAward): Promise<PersonalAward>;
     createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
     getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
     markPasswordResetTokenUsed(id: number): Promise<void>;
@@ -252,6 +261,54 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSeasonRecord(id: number): Promise<void> {
     await db.delete(seasonRecords).where(eq(seasonRecords.id, id));
+  }
+
+  async getTeamRecords(teamId: number, recordType: string): Promise<TeamRecord[]> {
+  return await db
+    .select()
+    .from(teamRecords)
+    .where(and(eq(teamRecords.teamId, teamId), eq(teamRecords.recordType, recordType)));
+}
+
+async createTeamRecord(record: InsertTeamRecord): Promise<TeamRecord> {
+  const [created] = await db
+    .insert(teamRecords)
+    .values(record)
+    .returning();
+
+  return created;
+}
+
+  async getPersonalAwards(teamId: number): Promise<PersonalAward[]> {
+    return await db
+      .select()
+      .from(personalAwards)
+      .where(eq(personalAwards.teamId, teamId));
+  }
+
+  async createPersonalAward(award: InsertPersonalAward): Promise<PersonalAward> {
+    const [created] = await db
+      .insert(personalAwards)
+      .values(award)
+      .returning();
+
+    return created;
+  }
+
+  async getTeamAwards(teamId: number): Promise<TeamAward[]> {
+    return await db
+      .select()
+      .from(teamAwards)
+      .where(eq(teamAwards.teamId, teamId));
+  }
+
+  async createTeamAward(award: InsertTeamAward): Promise<TeamAward> {
+    const [created] = await db
+      .insert(teamAwards)
+      .values(award)
+      .returning();
+
+    return created;
   }
 
   async getDepthChartEntriesByTeam(teamId: number): Promise<DepthChartEntry[]> {

@@ -1,6 +1,6 @@
 import { useRoute, Link, useLocation } from "wouter";
 import { useTeam, useDeleteTeam } from "@/hooks/use-teams";
-import { ArrowLeft, UserPlus, Pencil, Trash2, Shield, MoreVertical, Trophy, ActivitySquare, Camera, Plus, ChevronLeft, ChevronRight, BarChart3, Shirt, Copy } from "lucide-react";
+import { ArrowLeft, UserPlus, Pencil, Trash2, Shield, MoreVertical, Trophy, Medal, ActivitySquare, Camera, Plus, ChevronLeft, ChevronRight, BarChart3, Shirt, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,7 +52,7 @@ import { useAuth } from "@/context/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { DEPTH_CHART_POSITIONS, type DepthChartEntry, type Moment, type Player, type SeasonRecord } from "@shared/schema";
+import { DEPTH_CHART_POSITIONS, type DepthChartEntry, type Moment, type Player, type SeasonRecord, type TeamRecord, type TeamAward, type PersonalAward } from "@shared/schema";
 
 function MomentCard({ moment, isAdmin, teamId }: { moment: Moment; isAdmin: boolean; teamId: number }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -462,6 +462,75 @@ const { toast } = useToast();
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Overview");
+  const [isAddTeamAwardOpen, setIsAddTeamAwardOpen] = useState(false);
+  const [isAddPersonalAwardOpen, setIsAddPersonalAwardOpen] = useState(false);
+  const [teamAwardType, setTeamAwardType] = useState("");
+  const [teamAwardOpponent, setTeamAwardOpponent] = useState("");
+  const [teamAwardScore, setTeamAwardScore] = useState("");
+  const [teamAwardSeason, setTeamAwardSeason] = useState("");
+  const [personalAwardPlayer, setPersonalAwardPlayer] = useState("");
+  const [personalAwardName, setPersonalAwardName] = useState("");
+  const [personalAwardSeason, setPersonalAwardSeason] = useState("");
+  const [isAddRecordOpen, setIsAddRecordOpen] = useState(false);
+  const [recordType, setRecordType] = useState("");
+  const [recordCategory, setRecordCategory] = useState("");
+  const [recordPlayer, setRecordPlayer] = useState("");
+  const [recordValue, setRecordValue] = useState("");
+  const [recordSeason, setRecordSeason] = useState("");
+    const { data: gameRecords = [] } = useQuery<TeamRecord[]>({
+    queryKey: ["/api/teams", id, "records", "Game"],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/teams/${id}/records/Game`);
+      if (!response.ok) throw new Error("Failed to fetch game records");
+      return response.json();
+    },
+  });
+
+    const { data: teamAwards = [] } = useQuery<TeamAward[]>({
+    queryKey: ["/api/teams", id, "awards", "team"],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/teams/${id}/awards/team`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch team awards");
+      }
+      return response.json();
+    },
+  });
+
+    const { data: personalAwards = [] } = useQuery<PersonalAward[]>({
+    queryKey: ["/api/teams", id, "awards", "personal"],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/teams/${id}/awards/personal`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch personal awards");
+      }
+      return response.json();
+    },
+  });
+
+  const { data: teamSeasonRecords = [] } = useQuery<TeamRecord[]>({
+    queryKey: ["/api/teams", id, "records", "Season"],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/teams/${id}/records/Season`);
+      if (!response.ok) throw new Error("Failed to fetch season records");
+      return response.json();
+    },
+  });
+
+  const { data: careerRecords = [] } = useQuery<TeamRecord[]>({
+    queryKey: ["/api/teams", id, "records", "Career"],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/teams/${id}/records/Career`);
+      if (!response.ok) throw new Error("Failed to fetch career records");
+      return response.json();
+    },
+  });
+
   const [isAddMomentOpen, setIsAddMomentOpen] = useState(false);
   const [isAddSeasonRecordOpen, setIsAddSeasonRecordOpen] = useState(false);
   const [isAddDepthChartOpen, setIsAddDepthChartOpen] = useState(false);
@@ -605,7 +674,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
 
 <div className="mb-8 overflow-x-auto">
   <div className="flex min-w-max border-b">
-    {["Overview", "Hall of Fame", "Depth Chart", "Moments"].map(tab => (
+    {["Overview", "Hall of Fame", "Depth Chart", "Awards", "Records", "Moments"].map(tab => (
       <button
         key={tab}
         type="button"
@@ -1129,6 +1198,746 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
           )}
         </div>
         </div>
+
+{/* ── Records ───────────────────────────────────────────── */}
+<div className={`space-y-6 pb-10 ${activeTab !== "Records" ? "hidden" : ""}`}>
+    {/* Game Records */}
+  <Card className="shadow-sm border-primary/10">
+    <CardHeader className="bg-primary/5 pb-4 border-b">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-display tracking-wide">Game Records</h2>
+          <p className="text-sm text-muted-foreground">
+            Best single-game performances
+          </p>
+        </div>
+
+        {isAdmin && (
+          <Button
+            className="gap-2 hover-elevate"
+            onClick={() => {
+              setRecordType("Game");
+              setIsAddRecordOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+
+    <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          "Passing Yards",
+          "Passing Touchdowns",
+          "Rushing Yards",
+          "Rushing Touchdowns",
+          "Receiving Yards",
+          "Receiving Touchdowns",
+          "Sacks",
+          "Interceptions",
+        ].map(category => {
+          const record = gameRecords
+  .filter(item => item.category === category)
+  .sort((a, b) => b.value - a.value)[0];
+
+          return (
+            <div
+  key={category}
+  className="rounded-lg border p-4 flex items-center justify-between gap-3"
+>
+              <p className="font-semibold">{category}</p>
+
+              {record ? (
+  <div className="mt-1 flex-1">
+                  <p className="text-lg font-bold">
+                    {record.value}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {record.playerName} • {record.season}
+                  </p>
+                </div>
+) : (
+  <p className="text-sm text-muted-foreground mt-1">
+    No record set
+  </p>
+)}
+
+{isAdmin && record && (
+  <Button
+    variant="ghost"
+    size="icon"
+    className="shrink-0 text-destructive"
+    onClick={async () => {
+      try {
+        const response = await fetch(
+          `/api/teams/${id}/records/${record.id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete record");
+        }
+
+        queryClient.invalidateQueries({
+          queryKey: ["/api/teams", id, "records", "Game"],
+        });
+
+        toast({
+          title: "Record deleted",
+          description: "The record has been deleted successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete the record.",
+          variant: "destructive",
+        });
+      }
+    }}
+  >
+    ×
+  </Button>
+)}
+            </div>
+          );
+        })}
+      </div>
+    </CardContent>
+  </Card>
+
+    {/* Season Records */}
+  <Card className="shadow-sm border-primary/10">
+    <CardHeader className="bg-primary/5 pb-4 border-b">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-display tracking-wide">Season Records</h2>
+          <p className="text-sm text-muted-foreground">
+            Best single-season performances
+          </p>
+        </div>
+
+        {isAdmin && (
+          <Button
+            className="gap-2 hover-elevate"
+            onClick={() => {
+              setRecordType("Season");
+              setIsAddRecordOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+
+    <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          "Passing Yards",
+          "Passing Touchdowns",
+          "Rushing Yards",
+          "Rushing Touchdowns",
+          "Receiving Yards",
+          "Receiving Touchdowns",
+          "Sacks",
+          "Interceptions",
+        ].map(category => {
+          const record = teamSeasonRecords
+  .filter(item => item.category === category)
+  .sort((a, b) => b.value - a.value)[0];
+
+          return (
+            <div
+  key={category}
+  className="rounded-lg border p-4 flex items-center justify-between gap-3"
+>
+              <p className="font-semibold">{category}</p>
+
+              {record ? (
+                <div className="mt-1 flex-1">
+                  <p className="text-lg font-bold">
+                    {record.value}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {record.playerName} • {record.season}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  No record set
+                </p>
+              )}
+              {isAdmin && record && (
+  <Button
+    variant="ghost"
+    size="icon"
+    className="shrink-0 text-destructive"
+    onClick={async () => {
+      try {
+        const response = await fetch(
+          `/api/teams/${id}/records/${record.id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete record");
+        }
+
+        queryClient.invalidateQueries({
+          queryKey: ["/api/teams", id, "records", "Season"],
+        });
+
+        toast({
+          title: "Record deleted",
+          description: "The record has been deleted successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete the record.",
+          variant: "destructive",
+        });
+      }
+    }}
+  >
+    ×
+  </Button>
+)}
+            </div>
+          );
+        })}
+      </div>
+    </CardContent>
+  </Card>
+
+    {/* Career Records */}
+  <Card className="shadow-sm border-primary/10">
+    <CardHeader className="bg-primary/5 pb-4 border-b">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-display tracking-wide">Career Records</h2>
+          <p className="text-sm text-muted-foreground">
+            Best career performances
+          </p>
+        </div>
+
+        {isAdmin && (
+          <Button
+            className="gap-2 hover-elevate"
+            onClick={() => {
+              setRecordType("Career");
+              setIsAddRecordOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+
+    <CardContent className="pt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {[
+          "Passing Yards",
+          "Passing Touchdowns",
+          "Rushing Yards",
+          "Rushing Touchdowns",
+          "Receiving Yards",
+          "Receiving Touchdowns",
+          "Sacks",
+          "Interceptions",
+        ].map(category => {
+          const record = careerRecords
+  .filter(item => item.category === category)
+  .sort((a, b) => b.value - a.value)[0];
+
+          return (
+            <div
+  key={category}
+  className="rounded-lg border p-4 flex items-center justify-between gap-3"
+>
+              <p className="font-semibold">{category}</p>
+
+              {record ? (
+                <div className="mt-1 flex-1">
+                  <p className="text-lg font-bold">
+                    {record.value}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {record.playerName} • {record.season}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  No record set
+                </p>
+              )}
+              {isAdmin && record && (
+  <Button
+    variant="ghost"
+    size="icon"
+    className="shrink-0 text-destructive"
+    onClick={async () => {
+      try {
+        const response = await fetch(
+          `/api/teams/${id}/records/${record.id}`,
+          {
+            method: "DELETE",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to delete record");
+        }
+
+        queryClient.invalidateQueries({
+          queryKey: ["/api/teams", id, "records", "Career"],
+        });
+
+        toast({
+          title: "Record deleted",
+          description: "The record has been deleted successfully.",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete the record.",
+          variant: "destructive",
+        });
+      }
+    }}
+  >
+    ×
+  </Button>
+)}
+            </div>
+          );
+        })}
+      </div>
+    </CardContent>
+  </Card>
+
+  <Dialog open={isAddRecordOpen} onOpenChange={setIsAddRecordOpen}>
+    <DialogContent className="sm:max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle className="text-display text-2xl tracking-wide">
+          Add {recordType} Record
+        </DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div>
+          <Label>Category</Label>
+          <Select value={recordCategory} onValueChange={setRecordCategory}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select record category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Passing Yards">Passing Yards</SelectItem>
+              <SelectItem value="Passing Touchdowns">Passing Touchdowns</SelectItem>
+              <SelectItem value="Rushing Yards">Rushing Yards</SelectItem>
+              <SelectItem value="Rushing Touchdowns">Rushing Touchdowns</SelectItem>
+              <SelectItem value="Receiving Yards">Receiving Yards</SelectItem>
+              <SelectItem value="Receiving Touchdowns">Receiving Touchdowns</SelectItem>
+              <SelectItem value="Sacks">Sacks</SelectItem>
+              <SelectItem value="Interceptions">Interceptions</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Player</Label>
+<Input
+  placeholder="e.g. Alex Windham"
+  value={recordPlayer}
+  onChange={event => setRecordPlayer(event.target.value)}
+/>
+        </div>
+
+        <div>
+          <Label>Value</Label>
+<Input
+  type="number"
+  placeholder="e.g. 425"
+  value={recordValue}
+  onChange={event => setRecordValue(event.target.value)}
+/>
+        </div>
+
+        <div>
+          <Label>Season</Label>
+<Input
+  type="number"
+  placeholder="2026"
+  value={recordSeason}
+  onChange={event => setRecordSeason(event.target.value)}
+/>
+        </div>
+
+        <Button
+  className="w-full"
+  onClick={async () => {
+    try {
+      const response = await fetch(`/api/teams/${id}/records`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          recordType,
+          category: recordCategory,
+          playerName: recordPlayer,
+          value: Number(recordValue),
+          season: Number(recordSeason),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save record");
+      }
+
+      setIsAddRecordOpen(false);
+      setRecordCategory("");
+      setRecordPlayer("");
+      setRecordValue("");
+      setRecordSeason("");
+
+      queryClient.invalidateQueries({
+        queryKey: ["/api/teams", id, "records", recordType],
+      });
+
+      toast({
+        title: "Record saved",
+        description: "The record has been added successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save the record.",
+        variant: "destructive",
+      });
+    }
+  }}
+>
+  Save Record
+</Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+</div>
+
+{/* ── Awards ───────────────────────────────────────────── */}
+<div className={`space-y-6 pb-10 ${activeTab !== "Awards" ? "hidden" : ""}`}>
+  {/* Team Awards */}
+  <Card className="shadow-sm border-primary/10">
+    <CardHeader className="bg-primary/5 pb-4 border-b">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Trophy className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-display tracking-wide">Team Awards</h2>
+            <p className="text-sm text-muted-foreground">
+              Championships, bowl victories & playoff wins
+            </p>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <Button
+            className="gap-2 hover-elevate"
+            onClick={() => setIsAddTeamAwardOpen(true)}
+          >
+            <Plus className="h-4 w-4" /> Add
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+
+        <CardContent className="pt-6">
+      {teamAwards.length > 0 ? (
+        <div className="space-y-3">
+          {teamAwards.map((award) => (
+            <div
+              key={award.id}
+              className="rounded-lg border p-4 flex items-center justify-between gap-4"
+            >
+              <div>
+                <h3 className="font-semibold">{award.awardType}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {award.opponent} • {award.finalScore}
+                </p>
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">
+                {award.season}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="py-10 text-center text-muted-foreground">
+          <Trophy className="h-10 w-10 mx-auto mb-3 opacity-20" />
+          <p className="font-medium">No team awards recorded yet.</p>
+        </div>
+      )}
+    </CardContent>
+  </Card>
+
+  <Dialog open={isAddTeamAwardOpen} onOpenChange={setIsAddTeamAwardOpen}>
+    <DialogContent className="sm:max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle className="text-display text-2xl tracking-wide">
+          Add Team Award
+        </DialogTitle>
+      </DialogHeader>
+
+            <div className="space-y-4">
+        <div>
+          <Label>Award Type</Label>
+          <Select value={teamAwardType} onValueChange={setTeamAwardType}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select award type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="conference">Conference Championship</SelectItem>
+              <SelectItem value="bowl">Bowl Victory</SelectItem>
+              <SelectItem value="cfp">CFP Victory</SelectItem>
+              <SelectItem value="national">National Championship</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label>Opponent</Label>
+          <Input
+            placeholder="e.g. Florida Atlantic"
+            value={teamAwardOpponent}
+            onChange={(e) => setTeamAwardOpponent(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label>Final Score</Label>
+          <Input
+            placeholder="e.g. 31-24"
+            value={teamAwardScore}
+            onChange={(e) => setTeamAwardScore(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <Label>Season</Label>
+          <Input
+            type="number"
+            placeholder="2026"
+            value={teamAwardSeason}
+            onChange={(e) => setTeamAwardSeason(e.target.value)}
+          />
+        </div>
+
+        <Button
+          className="w-full"
+          onClick={async () => {
+            try {
+              const response = await fetch(`/api/teams/${id}/awards/team`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  awardType:
+                    teamAwardType === "conference"
+                      ? "Conference Championship"
+                      : teamAwardType === "bowl"
+                        ? "Bowl Victory"
+                        : teamAwardType === "cfp"
+                          ? "CFP Victory"
+                          : "National Championship",
+                  opponent: teamAwardOpponent,
+                  finalScore: teamAwardScore,
+                  season: Number(teamAwardSeason),
+                }),
+              });
+
+              if (!response.ok) {
+                throw new Error("Failed to save team award");
+              }
+
+              setIsAddTeamAwardOpen(false);
+              setTeamAwardType("");
+              setTeamAwardOpponent("");
+              setTeamAwardScore("");
+              setTeamAwardSeason("");
+                            queryClient.invalidateQueries({
+                queryKey: ["/api/teams", id, "awards", "team"],
+              });
+
+              toast({
+                title: "Award saved",
+                description: "The team award has been added successfully.",
+              });
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to save the team award.",
+                variant: "destructive",
+              });
+            }
+          }}
+        >
+          Save Award
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+
+  {/* Personal Awards */}
+  <Card className="shadow-sm border-primary/10">
+    <CardHeader className="bg-primary/5 pb-4 border-b">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+            <Medal className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-display tracking-wide">Personal Awards</h2>
+            <p className="text-sm text-muted-foreground">
+              Player awards, honors & achievements
+            </p>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <Button
+  className="gap-2 hover-elevate"
+  onClick={() => setIsAddPersonalAwardOpen(true)}
+>
+  <Plus className="h-4 w-4" /> Add
+</Button>
+        )}
+      </div>
+    </CardHeader>
+
+    <CardContent className="pt-6">
+  {personalAwards.length > 0 ? (
+    <div className="space-y-3">
+      {personalAwards.map((award) => (
+        <div
+          key={award.id}
+          className="rounded-lg border p-4 flex items-center justify-between gap-4"
+        >
+          <div>
+            <h3 className="font-semibold">{award.playerName}</h3>
+            <p className="text-sm text-muted-foreground">
+              {award.award}
+            </p>
+          </div>
+          <span className="text-sm font-medium text-muted-foreground">
+            {award.season}
+          </span>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className="py-10 text-center text-muted-foreground">
+      <Medal className="h-10 w-10 mx-auto mb-3 opacity-20" />
+      <p className="font-medium">No personal awards recorded yet.</p>
+    </div>
+  )}
+</CardContent>
+</Card>
+
+  <Dialog open={isAddPersonalAwardOpen} onOpenChange={setIsAddPersonalAwardOpen}>
+    <DialogContent className="sm:max-w-[500px]">
+      <DialogHeader>
+        <DialogTitle className="text-display text-2xl tracking-wide">
+          Add Personal Award
+        </DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div>
+          <Label>Player</Label>
+          <Input
+  placeholder="e.g. Brenton Russo"
+  value={personalAwardPlayer}
+  onChange={(e) => setPersonalAwardPlayer(e.target.value)}
+/>
+        </div>
+
+        <div>
+          <Label>Award</Label>
+          <Input
+  placeholder="e.g. Conference MVP"
+  value={personalAwardName}
+  onChange={(e) => setPersonalAwardName(e.target.value)}
+/>
+        </div>
+
+        <div>
+          <Label>Season</Label>
+          <Input
+  type="number"
+  placeholder="2026"
+  value={personalAwardSeason}
+  onChange={(e) => setPersonalAwardSeason(e.target.value)}
+/>
+        </div>
+
+        <Button
+  className="w-full"
+  onClick={async () => {
+    try {
+      const response = await fetch(`/api/teams/${id}/awards/personal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          playerName: personalAwardPlayer,
+          award: personalAwardName,
+          season: Number(personalAwardSeason),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save personal award");
+      }
+
+      setIsAddPersonalAwardOpen(false);
+      setPersonalAwardPlayer("");
+      setPersonalAwardName("");
+      setPersonalAwardSeason("");
+            queryClient.invalidateQueries({
+        queryKey: ["/api/teams", id, "awards", "personal"],
+      });
+
+      toast({
+        title: "Award saved",
+        description: "The personal award has been added successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save the personal award.",
+        variant: "destructive",
+      });
+    }
+  }}
+>
+  Save Award
+</Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+</div>
 
       {/* ── Upload a Moment ───────────────────────────────────────────── */}
       <div className={`space-y-6 pb-10 ${activeTab !== "Moments" ? "hidden" : ""}`}>

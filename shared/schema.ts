@@ -256,3 +256,51 @@ export type UpdateDepthChartEntryRequest = Partial<InsertDepthChartEntry>;
 
 export type TeamWithPlayers = Team & { players: Player[] };
 export type PlayerWithStats = Player & { stats: PlayerStat[], team: Team };
+
+export const teamRecords = pgTable("team_records", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  recordType: varchar("record_type", { length: 20 }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  playerName: text("player_name").notNull(),
+  value: integer("value").notNull(),
+  season: integer("season").notNull(),
+});
+
+export const insertTeamRecordSchema = createInsertSchema(teamRecords).omit({
+  id: true,
+});
+
+export type TeamRecord = typeof teamRecords.$inferSelect;
+export type InsertTeamRecord = z.infer<typeof insertTeamRecordSchema>;
+
+export const teamAwards = pgTable("team_awards", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  awardType: varchar("award_type", { length: 50 }).notNull(),
+  opponent: text("opponent").notNull(),
+  finalScore: text("final_score").notNull(),
+  season: integer("season").notNull(),
+});
+
+export const insertTeamAwardSchema = createInsertSchema(teamAwards).omit({
+  id: true,
+});
+
+export type TeamAward = typeof teamAwards.$inferSelect;
+export type InsertTeamAward = z.infer<typeof insertTeamAwardSchema>;
+
+export const personalAwards = pgTable("personal_awards", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  playerName: text("player_name").notNull(),
+  award: varchar("award", { length: 100 }).notNull(),
+  season: integer("season").notNull(),
+});
+
+export const insertPersonalAwardSchema = createInsertSchema(personalAwards).omit({
+  id: true,
+});
+
+export type PersonalAward = typeof personalAwards.$inferSelect;
+export type InsertPersonalAward = z.infer<typeof insertPersonalAwardSchema>;

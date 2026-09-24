@@ -8,6 +8,20 @@
       "when": 1790066924163,
       "tag": "0000_legal_eddie_brock",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790281905332,
+      "tag": "0001_strange_ravenous",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790288240172,
+      "tag": "0002_right_jackpot",
+      "breakpoints": true
     }
   ]
 }
