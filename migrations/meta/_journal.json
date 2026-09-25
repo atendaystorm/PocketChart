@@ -29,6 +29,13 @@
       "when": 1790312656486,
       "tag": "0003_furry_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790318029743,
+      "tag": "0004_amazing_exodus",
+      "breakpoints": true
     }
   ]
 }

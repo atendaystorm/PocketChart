@@ -1,10 +1,13 @@
 import { db } from "./db";
+
 import {
-    teams, players, playerStats, users, passwordResetTokens, leagues, moments, seasonRecords, depthChartEntries, teamRecords, teamAwards, personalAwards,
+  teams, players, playerStats, users, passwordResetTokens, leagues, moments,
+  seasonRecords, depthChartEntries, teamRecords, teamAwards, personalAwards,
+  recruitingClasses, recruitingPlayers,
   type Team, type InsertTeam, type UpdateTeamRequest, type TeamWithPlayers,
   type Player, type InsertPlayer, type UpdatePlayerRequest, type PlayerWithStats,
   type PlayerStat, type InsertPlayerStat, type UpdatePlayerStatRequest,
-    type User, type InsertUser, type PasswordResetToken, type InsertPasswordResetToken,
+  type User, type InsertUser, type PasswordResetToken, type InsertPasswordResetToken,
   type League,
   type Moment, type InsertMoment, type UpdateMomentRequest,
   type SeasonRecord, type InsertSeasonRecord, type UpdateSeasonRecordRequest,
@@ -12,7 +15,10 @@ import {
   type TeamRecord, type InsertTeamRecord,
   type TeamAward, type InsertTeamAward,
   type PersonalAward, type InsertPersonalAward,
+  type RecruitingClass, type InsertRecruitingClass,
+  type RecruitingPlayer, type InsertRecruitingPlayer,
 } from "@shared/schema";
+
 import { and, eq, isNull, inArray } from "drizzle-orm";
 
 export interface IStorage {
@@ -54,11 +60,19 @@ export interface IStorage {
   updateMoment(id: number, updates: UpdateMomentRequest): Promise<Moment>;
   deleteMoment(id: number): Promise<void>;
 
-  getSeasonRecordsByTeam(teamId: number): Promise<SeasonRecord[]>;
-  createSeasonRecord(data: InsertSeasonRecord): Promise<SeasonRecord>;
-  updateSeasonRecord(id: number, updates: UpdateSeasonRecordRequest): Promise<SeasonRecord>;
-  deleteSeasonRecord(id: number): Promise<void>;
+getSeasonRecordsByTeam(teamId: number): Promise<SeasonRecord[]>;
+createSeasonRecord(data: InsertSeasonRecord): Promise<SeasonRecord>;
+updateSeasonRecord(id: number, updates: UpdateSeasonRecordRequest): Promise<SeasonRecord>;
+deleteSeasonRecord(id: number): Promise<void>;
 
+getRecruitingClassesByTeam(teamId: number): Promise<RecruitingClass[]>;
+createRecruitingClass(data: InsertRecruitingClass): Promise<RecruitingClass>;
+deleteRecruitingClass(id: number): Promise<void>;
+
+getRecruitingPlayersByClass(recruitingClassId: number): Promise<RecruitingPlayer[]>;
+createRecruitingPlayer(data: InsertRecruitingPlayer): Promise<RecruitingPlayer>;
+updateRecruitingPlayer(id: number, updates: Partial<InsertRecruitingPlayer>): Promise<RecruitingPlayer>;
+deleteRecruitingPlayer(id: number): Promise<void>;
   getDepthChartEntriesByTeam(teamId: number): Promise<DepthChartEntry[]>;
   replaceDepthChartRoster(teamId: number, season: number, entries: Omit<InsertDepthChartEntry, "teamId" | "season">[]): Promise<DepthChartEntry[]>;
   deleteDepthChartRoster(teamId: number, season: number): Promise<void>;
@@ -261,6 +275,66 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSeasonRecord(id: number): Promise<void> {
     await db.delete(seasonRecords).where(eq(seasonRecords.id, id));
+  }
+
+    async getRecruitingClassesByTeam(teamId: number): Promise<RecruitingClass[]> {
+    return await db
+      .select()
+      .from(recruitingClasses)
+      .where(eq(recruitingClasses.teamId, teamId));
+  }
+
+  async createRecruitingClass(data: InsertRecruitingClass): Promise<RecruitingClass> {
+    const [created] = await db
+      .insert(recruitingClasses)
+      .values(data)
+      .returning();
+    return created;
+  }
+
+  async deleteRecruitingClass(id: number): Promise<void> {
+    await db
+      .delete(recruitingClasses)
+      .where(eq(recruitingClasses.id, id));
+  }
+
+  async getRecruitingPlayersByClass(
+    recruitingClassId: number
+  ): Promise<RecruitingPlayer[]> {
+    return await db
+      .select()
+      .from(recruitingPlayers)
+      .where(eq(recruitingPlayers.recruitingClassId, recruitingClassId));
+  }
+
+  async createRecruitingPlayer(
+    data: InsertRecruitingPlayer
+  ): Promise<RecruitingPlayer> {
+    const [created] = await db
+      .insert(recruitingPlayers)
+      .values(data)
+      .returning();
+    return created;
+  }
+
+  async updateRecruitingPlayer(
+    id: number,
+    updates: Partial<InsertRecruitingPlayer>
+  ): Promise<RecruitingPlayer> {
+    const [updated] = await db
+      .update(recruitingPlayers)
+      .set(updates)
+      .where(eq(recruitingPlayers.id, id))
+      .returning();
+
+    if (!updated) throw new Error("Recruiting player not found");
+    return updated;
+  }
+
+  async deleteRecruitingPlayer(id: number): Promise<void> {
+    await db
+      .delete(recruitingPlayers)
+      .where(eq(recruitingPlayers.id, id));
   }
 
   async getTeamRecords(teamId: number, recordType: string): Promise<TeamRecord[]> {

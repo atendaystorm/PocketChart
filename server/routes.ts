@@ -540,6 +540,128 @@ console.log("Deleted records:", result.rowCount);
     }
   });
 
+  // Recruiting routes
+app.get("/api/teams/:teamId/recruiting", async (req, res) => {
+  try {
+    const classes = await storage.getRecruitingClassesByTeam(
+      Number(req.params.teamId)
+    );
+
+    res.json(classes);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load recruiting classes" });
+  }
+});
+
+app.post("/api/teams/:teamId/recruiting", requireAuth, async (req, res) => {
+  try {
+    const bodySchema = z.object({
+      season: z.coerce.number().int().min(0),
+    });
+
+    const input = bodySchema.parse(req.body);
+
+    const recruitingClass = await storage.createRecruitingClass({
+      teamId: Number(req.params.teamId),
+      ...input,
+    });
+
+    res.status(201).json(recruitingClass);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
+
+    throw err;
+  }
+});
+
+app.get("/api/recruiting/classes/:classId/players", async (req, res) => {
+  try {
+    const players = await storage.getRecruitingPlayersByClass(
+      Number(req.params.classId)
+    );
+
+    res.json(players);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load recruiting players" });
+  }
+});
+
+app.post("/api/recruiting/classes/:classId/players", requireAuth, async (req, res) => {
+  try {
+    const bodySchema = z.object({
+      playerName: z.string().min(1),
+      starRating: z.coerce.number().int().min(0).max(5),
+      position: z.string().min(1),
+      height: z.string().min(1),
+      weight: z.coerce.number().int().min(0),
+      nationalRank: z.coerce.number().int().min(1),
+    });
+
+    const input = bodySchema.parse(req.body);
+
+    const player = await storage.createRecruitingPlayer({
+      recruitingClassId: Number(req.params.classId),
+      ...input,
+    });
+
+    res.status(201).json(player);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
+
+    throw err;
+  }
+});
+
+app.delete("/api/recruiting/classes/:id", requireAuth, async (req, res) => {
+  try {
+    await storage.deleteRecruitingClass(Number(req.params.id));
+    res.status(204).send();
+  } catch (err) {
+    res.status(404).json({ message: "Recruiting class not found" });
+  }
+});
+
+app.put("/api/recruiting/players/:id", requireAuth, async (req, res) => {
+  try {
+    const bodySchema = z.object({
+      playerName: z.string().min(1).optional(),
+      starRating: z.coerce.number().int().min(0).max(5).optional(),
+      position: z.string().min(1).optional(),
+      height: z.string().min(1).optional(),
+      weight: z.coerce.number().int().min(0).optional(),
+      nationalRank: z.coerce.number().int().min(1).optional(),
+    });
+
+    const input = bodySchema.parse(req.body);
+
+    const player = await storage.updateRecruitingPlayer(
+      Number(req.params.id),
+      input
+    );
+
+    res.json(player);
+  } catch (err) {
+    if (err instanceof z.ZodError) {
+      return res.status(400).json({ message: err.errors[0].message });
+    }
+
+    res.status(404).json({ message: "Recruiting player not found" });
+  }
+});
+
+app.delete("/api/recruiting/players/:id", requireAuth, async (req, res) => {
+  try {
+    await storage.deleteRecruitingPlayer(Number(req.params.id));
+    res.status(204).send();
+  } catch (err) {
+    res.status(404).json({ message: "Recruiting player not found" });
+  }
+});
+
     // Team records routes
   app.get("/api/teams/:teamId/records/:recordType", async (req, res) => {
     const records = await storage.getTeamRecords(

@@ -491,6 +491,18 @@ const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isEditCoachOpen, setIsEditCoachOpen] = useState(false);
   const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
+  const [isAddRecruitingClassOpen, setIsAddRecruitingClassOpen] = useState(false);
+  const [openRecruitingClasses, setOpenRecruitingClasses] = useState<number[]>([]);
+  const [recruitingSeason, setRecruitingSeason] = useState("");
+  const [isAddRecruitingPlayerOpen, setIsAddRecruitingPlayerOpen] = useState(false);
+  const [recruitingPlayerName, setRecruitingPlayerName] = useState("");
+  const [recruitingStarRating, setRecruitingStarRating] = useState("");
+  const [recruitingPosition, setRecruitingPosition] = useState("");
+  const [recruitingHeight, setRecruitingHeight] = useState("");
+  const [recruitingWeight, setRecruitingWeight] = useState("");
+  const [recruitingNationalRank, setRecruitingNationalRank] = useState("");
+  const [selectedRecruitingClassId, setSelectedRecruitingClassId] = useState<number | null>(null);
+  const [selectedRecruitingPlayer, setSelectedRecruitingPlayer] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("Overview");
   const [isAddTeamAwardOpen, setIsAddTeamAwardOpen] = useState(false);
   const [isAddPersonalAwardOpen, setIsAddPersonalAwardOpen] = useState(false);
@@ -517,6 +529,138 @@ const { toast } = useToast();
     },
   });
 
+  function RecruitingClassCard({
+  recruitingClass,
+  isAdmin,
+}: {
+  recruitingClass: {
+    id: number;
+    teamId: number;
+    season: number;
+  };
+  isAdmin: boolean;
+}) {
+  const { data: players = [] } = useQuery({
+    queryKey: ["/api/recruiting/classes", recruitingClass.id, "players"],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/recruiting/classes/${recruitingClass.id}/players`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch recruiting players");
+      }
+
+      return response.json();
+    },
+  });
+
+  return (
+    <>
+      {players.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="px-4 py-3 text-left font-semibold">
+                  Player Name
+                </th>
+                <th className="px-4 py-3 text-left font-semibold">
+                  Star Rating
+                </th>
+                <th className="px-4 py-3 text-left font-semibold">
+                  Position
+                </th>
+                <th className="px-4 py-3 text-left font-semibold">
+                  Height & Weight
+                </th>
+                <th className="px-4 py-3 text-left font-semibold">
+                  National Rank
+                </th>
+                <th className="px-4 py-3 text-right font-semibold">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {players.map((player: any) => (
+                <tr key={player.id} className="border-b last:border-0">
+                  <td className="px-4 py-3 font-medium">
+                    {player.playerName}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {Array.from({ length: player.starRating }, (_, index) => (
+                      <span key={index} className="text-yellow-500">
+                        ★
+                      </span>
+                    ))}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {player.position}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    {player.height} • {player.weight} lbs
+                  </td>
+
+                  <td className="px-4 py-3">
+                    #{player.nationalRank}
+                  </td>
+
+                  <td className="px-4 py-3 text-right">
+                    {isAdmin && (
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setSelectedRecruitingPlayer(player)
+                          }
+                          title="Edit player"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Delete ${player.playerName} from this recruiting class?`
+                              )
+                            ) {
+                              deleteRecruitingPlayer.mutate({
+                                id: player.id,
+                                recruitingClassId:
+                                  player.recruitingClassId,
+                              });
+                            }
+                          }}
+                          title="Delete player"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Recruiting prospects will appear here.
+        </p>
+      )}
+    </>
+  );
+}
+
     const { data: teamAwards = [] } = useQuery<TeamAward[]>({
     queryKey: ["/api/teams", id, "awards", "team"],
     enabled: !!id,
@@ -524,6 +668,127 @@ const { toast } = useToast();
       const response = await fetch(`/api/teams/${id}/awards/team`);
       if (!response.ok) {
         throw new Error("Failed to fetch team awards");
+      }
+      return response.json();
+    },
+  });
+
+const createRecruitingPlayer = useMutation({
+  mutationFn: () =>
+    apiRequest(
+      "POST",
+      `/api/recruiting/classes/${selectedRecruitingClassId}/players`,
+      {
+        playerName: recruitingPlayerName,
+        starRating: Number(recruitingStarRating),
+        position: recruitingPosition,
+        height: recruitingHeight,
+        weight: Number(recruitingWeight),
+        nationalRank: Number(recruitingNationalRank),
+      }
+    ),
+  onSuccess: () => {
+  const classId = selectedRecruitingClassId;
+
+  setRecruitingPlayerName("");
+  setRecruitingStarRating("");
+  setRecruitingPosition("");
+  setRecruitingHeight("");
+  setRecruitingWeight("");
+  setRecruitingNationalRank("");
+  setSelectedRecruitingClassId(null);
+  setIsAddRecruitingPlayerOpen(false);
+
+  if (classId !== null) {
+    queryClient.invalidateQueries({
+      queryKey: ["/api/recruiting/classes", classId, "players"],
+    });
+  }
+
+  toast({
+    title: "Recruiting player added",
+  });
+},
+});
+
+const deleteRecruitingPlayer = useMutation({
+  mutationFn: (player: { id: number; recruitingClassId: number }) =>
+    apiRequest("DELETE", `/api/recruiting/players/${player.id}`),
+  onSuccess: (_data, player) => {
+    queryClient.invalidateQueries({
+      queryKey: [
+        "/api/recruiting/classes",
+        player.recruitingClassId,
+        "players",
+      ],
+    });
+
+    toast({
+      title: "Recruiting player deleted",
+    });
+  },
+});
+
+const updateRecruitingPlayer = useMutation({
+  mutationFn: (player: {
+    id: number;
+    recruitingClassId: number;
+    playerName: string;
+    starRating: number;
+    position: string;
+    height: string;
+    weight: number;
+    nationalRank: number;
+  }) =>
+    apiRequest("PUT", `/api/recruiting/players/${player.id}`, {
+      playerName: player.playerName,
+      starRating: player.starRating,
+      position: player.position,
+      height: player.height,
+      weight: player.weight,
+      nationalRank: player.nationalRank,
+    }),
+  onSuccess: (_data, player) => {
+    queryClient.invalidateQueries({
+      queryKey: [
+        "/api/recruiting/classes",
+        player.recruitingClassId,
+        "players",
+      ],
+    });
+
+    setSelectedRecruitingPlayer(null);
+
+    toast({
+      title: "Recruiting player updated",
+    });
+  },
+});
+
+    const createRecruitingClass = useMutation({
+    mutationFn: () =>
+      apiRequest("POST", `/api/teams/${id}/recruiting`, {
+        season: Number(recruitingSeason),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/teams", id, "recruiting"] });
+      setRecruitingSeason("");
+      setIsAddRecruitingClassOpen(false);
+      toast({ title: "Recruiting class created" });
+    },
+  });
+
+    const { data: recruitingClasses = [] } = useQuery<{
+    id: number;
+    teamId: number;
+    season: number;
+  }[]>({
+    queryKey: ["/api/teams", id, "recruiting"],
+    enabled: !!id,
+    queryFn: async () => {
+      const response = await fetch(`/api/teams/${id}/recruiting`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch recruiting classes");
       }
       return response.json();
     },
@@ -704,7 +969,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
 
 <div className="mb-8 overflow-x-auto">
   <div className="flex min-w-max border-b">
-    {["Overview", "Hall of Fame", "Depth Chart", "Awards", "Records", "Moments"].map(tab => (
+    {["Overview", "Hall of Fame", "Depth Chart", "Awards", "Records", "Moments", "Recruiting"].map(tab => (
       <button
         key={tab}
         type="button"
@@ -2016,6 +2281,337 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
             </p>
           </div>
         )}
+            </div>
+
+      {/* ── Recruiting ─────────────────────────────────────────────── */}
+      <div className={`space-y-6 pb-10 ${activeTab !== "Recruiting" ? "hidden" : ""}`}>
+        <div className="flex items-center justify-between gap-4">
+  <div>
+    <h2 className="text-2xl font-bold text-display tracking-wide">Recruiting</h2>
+    <p className="text-sm text-muted-foreground">
+      Manage recruiting classes and prospects
+    </p>
+  </div>
+
+  {isAdmin && (
+    <Dialog open={isAddRecruitingClassOpen} onOpenChange={setIsAddRecruitingClassOpen}>
+  <DialogTrigger asChild>
+    <Button className="gap-2 hover-elevate">
+      <Plus className="h-4 w-4" />
+      Add Recruiting Class
+    </Button>
+  </DialogTrigger>
+
+  <DialogContent className="sm:max-w-[420px]">
+    <DialogHeader>
+      <DialogTitle className="text-display text-2xl tracking-wide">
+        Add Recruiting Class
+      </DialogTitle>
+    </DialogHeader>
+
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="recruiting-season">Season</Label>
+        <Input
+  id="recruiting-season"
+  type="number"
+  placeholder="2027"
+  value={recruitingSeason}
+  onChange={(e) => setRecruitingSeason(e.target.value)}
+/>
+      </div>
+
+      <Button
+  className="w-full"
+  onClick={() => createRecruitingClass.mutate()}
+  disabled={!recruitingSeason || createRecruitingClass.isPending}
+>
+  {createRecruitingClass.isPending
+    ? "Creating..."
+    : "Create Recruiting Class"}
+</Button>
+    </div>
+  </DialogContent>
+</Dialog>
+  )}
+</div>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+  {recruitingClasses.length > 0 ? (
+    recruitingClasses.map(recruitingClass => (
+      <Card key={recruitingClass.id}>
+                <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              className="flex items-center gap-3 text-left"
+              onClick={() =>
+                setOpenRecruitingClasses((current) =>
+                  current.includes(recruitingClass.id)
+                    ? current.filter((classId) => classId !== recruitingClass.id)
+                    : [...current, recruitingClass.id]
+                )
+              }
+            >
+              <span className="text-sm text-muted-foreground">
+                {openRecruitingClasses.includes(recruitingClass.id) ? "▲" : "▼"}
+              </span>
+
+              <h3 className="text-xl font-bold">
+                {recruitingClass.season} Recruiting Class
+              </h3>
+            </button>
+
+    {isAdmin && (
+      <Dialog
+  open={isAddRecruitingPlayerOpen}
+  onOpenChange={setIsAddRecruitingPlayerOpen}
+>
+  <Button
+  className="gap-2 hover-elevate"
+  onClick={() => {
+    setSelectedRecruitingClassId(recruitingClass.id);
+    setIsAddRecruitingPlayerOpen(true);
+  }}
+>
+  <Plus className="h-4 w-4" />
+  Add Player
+</Button>
+
+  <DialogContent className="sm:max-w-[520px]">
+    <DialogHeader>
+      <DialogTitle className="text-display text-2xl tracking-wide">
+        Add Recruiting Player
+      </DialogTitle>
+    </DialogHeader>
+
+    <div className="space-y-2">
+  <Label htmlFor="recruiting-player-name">Player Name</Label>
+  <Input
+    id="recruiting-player-name"
+    placeholder="Enter player name"
+    value={recruitingPlayerName}
+    onChange={(e) => setRecruitingPlayerName(e.target.value)}
+  />
+</div>
+    <div className="space-y-2">
+  <Label htmlFor="recruiting-star-rating">Star Rating</Label>
+  <Input
+    id="recruiting-star-rating"
+    type="number"
+    min="0"
+    max="5"
+    placeholder="5"
+    value={recruitingStarRating}
+    onChange={(e) => setRecruitingStarRating(e.target.value)}
+  />
+</div>
+    <div className="space-y-2">
+  <Label htmlFor="recruiting-position">Position</Label>
+  <Input
+    id="recruiting-position"
+    placeholder="QB"
+    value={recruitingPosition}
+    onChange={(e) => setRecruitingPosition(e.target.value)}
+  />
+</div>
+    <div className="space-y-4">
+      <div className="space-y-2">
+  <Label htmlFor="recruiting-height">Height</Label>
+  <Input
+    id="recruiting-height"
+    placeholder="6'2&quot;"
+    value={recruitingHeight}
+    onChange={(e) => setRecruitingHeight(e.target.value)}
+  />
+</div>
+<div className="space-y-2">
+  <Label htmlFor="recruiting-weight">Weight</Label>
+  <Input
+    id="recruiting-weight"
+    type="number"
+    placeholder="200"
+    value={recruitingWeight}
+    onChange={(e) => setRecruitingWeight(e.target.value)}
+  />
+</div>
+<div className="space-y-2">
+  <Label htmlFor="recruiting-national-rank">National Rank</Label>
+  <Input
+    id="recruiting-national-rank"
+    type="number"
+    placeholder="25"
+    value={recruitingNationalRank}
+    onChange={(e) => setRecruitingNationalRank(e.target.value)}
+  />
+</div>
+
+<Button
+  className="w-full"
+  onClick={() => createRecruitingPlayer.mutate()}
+  disabled={
+    !recruitingPlayerName ||
+    !recruitingStarRating ||
+    !recruitingPosition ||
+    !recruitingHeight ||
+    !recruitingWeight ||
+    !recruitingNationalRank ||
+    selectedRecruitingClassId === null ||
+    createRecruitingPlayer.isPending
+  }
+>
+  {createRecruitingPlayer.isPending
+    ? "Adding..."
+    : "Add Recruiting Player"}
+</Button>
+    </div>
+  </DialogContent>
+</Dialog>
+    )}
+  </div>
+</CardHeader>
+{selectedRecruitingPlayer && (
+  <Dialog
+    open={!!selectedRecruitingPlayer}
+    onOpenChange={(open) => {
+      if (!open) {
+        setSelectedRecruitingPlayer(null);
+      }
+    }}
+  >
+    <DialogContent className="sm:max-w-[520px]">
+      <DialogHeader>
+        <DialogTitle className="text-display text-2xl tracking-wide">
+          Edit Recruiting Player
+        </DialogTitle>
+      </DialogHeader>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="edit-recruiting-player-name">Player Name</Label>
+          <Input
+            id="edit-recruiting-player-name"
+            value={selectedRecruitingPlayer.playerName}
+            onChange={(e) =>
+              setSelectedRecruitingPlayer({
+                ...selectedRecruitingPlayer,
+                playerName: e.target.value,
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="edit-recruiting-star-rating">Star Rating</Label>
+          <Input
+            id="edit-recruiting-star-rating"
+            type="number"
+            min="1"
+            max="5"
+            value={selectedRecruitingPlayer.starRating}
+            onChange={(e) =>
+              setSelectedRecruitingPlayer({
+                ...selectedRecruitingPlayer,
+                starRating: Number(e.target.value),
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="edit-recruiting-position">Position</Label>
+          <Input
+            id="edit-recruiting-position"
+            value={selectedRecruitingPlayer.position}
+            onChange={(e) =>
+              setSelectedRecruitingPlayer({
+                ...selectedRecruitingPlayer,
+                position: e.target.value,
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="edit-recruiting-height">Height</Label>
+          <Input
+            id="edit-recruiting-height"
+            value={selectedRecruitingPlayer.height}
+            onChange={(e) =>
+              setSelectedRecruitingPlayer({
+                ...selectedRecruitingPlayer,
+                height: e.target.value,
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="edit-recruiting-weight">Weight</Label>
+          <Input
+            id="edit-recruiting-weight"
+            type="number"
+            value={selectedRecruitingPlayer.weight}
+            onChange={(e) =>
+              setSelectedRecruitingPlayer({
+                ...selectedRecruitingPlayer,
+                weight: Number(e.target.value),
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="edit-recruiting-national-rank">
+            National Rank
+          </Label>
+          <Input
+            id="edit-recruiting-national-rank"
+            type="number"
+            min="1"
+            value={selectedRecruitingPlayer.nationalRank}
+            onChange={(e) =>
+              setSelectedRecruitingPlayer({
+                ...selectedRecruitingPlayer,
+                nationalRank: Number(e.target.value),
+              })
+            }
+          />
+        </div>
+
+        <Button
+          className="w-full"
+          onClick={() =>
+            updateRecruitingPlayer.mutate(selectedRecruitingPlayer)
+          }
+          disabled={updateRecruitingPlayer.isPending}
+        >
+          {updateRecruitingPlayer.isPending ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </DialogContent>
+  </Dialog>
+)}
+        {openRecruitingClasses.includes(recruitingClass.id) && (
+  <CardContent>
+    <RecruitingClassCard
+      recruitingClass={recruitingClass}
+      isAdmin={isAdmin}
+    />
+  </CardContent>
+)}
+      </Card>
+    ))
+  ) : (
+    <p className="text-muted-foreground">
+      No recruiting classes yet.
+    </p>
+  )}
+</div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

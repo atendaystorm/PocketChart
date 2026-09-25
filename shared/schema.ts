@@ -160,6 +160,23 @@ export const seasonRecords = pgTable("season_records", {
   nationalChampionship: boolean("national_championship").default(false).notNull(),
 });
 
+export const recruitingClasses = pgTable("recruiting_classes", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").notNull(),
+  season: integer("season").notNull(),
+});
+
+export const recruitingPlayers = pgTable("recruiting_players", {
+  id: serial("id").primaryKey(),
+  recruitingClassId: integer("recruiting_class_id").notNull(),
+  playerName: text("player_name").notNull(),
+  starRating: integer("star_rating").notNull(),
+  position: varchar("position", { length: 10 }).notNull(),
+  height: text("height").notNull(),
+  weight: integer("weight").notNull(),
+  nationalRank: integer("national_rank").notNull(),
+});
+
 export const depthChartEntries = pgTable("depth_chart_entries", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull(),
@@ -252,6 +269,20 @@ export type UpdateMomentRequest = Partial<InsertMoment>;
 export type SeasonRecord = typeof seasonRecords.$inferSelect;
 export type InsertSeasonRecord = z.infer<typeof insertSeasonRecordSchema>;
 export type UpdateSeasonRecordRequest = Partial<InsertSeasonRecord>;
+
+export const insertRecruitingClassSchema = createInsertSchema(recruitingClasses).omit({
+  id: true,
+});
+
+export const insertRecruitingPlayerSchema = createInsertSchema(recruitingPlayers).omit({
+  id: true,
+});
+
+export type RecruitingClass = typeof recruitingClasses.$inferSelect;
+export type InsertRecruitingClass = z.infer<typeof insertRecruitingClassSchema>;
+
+export type RecruitingPlayer = typeof recruitingPlayers.$inferSelect;
+export type InsertRecruitingPlayer = z.infer<typeof insertRecruitingPlayerSchema>;
 
 export type DepthChartEntry = typeof depthChartEntries.$inferSelect;
 export type InsertDepthChartEntry = z.infer<typeof insertDepthChartEntrySchema>;
