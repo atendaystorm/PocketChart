@@ -584,7 +584,9 @@ const { toast } = useToast();
             </thead>
 
             <tbody>
-              {players.map((player: any) => (
+              {[...players]
+  .sort((a: any, b: any) => a.nationalRank - b.nationalRank)
+  .map((player: any) => (
                 <tr key={player.id} className="border-b last:border-0">
                   <td className="px-4 py-3 font-medium">
                     {player.playerName}
