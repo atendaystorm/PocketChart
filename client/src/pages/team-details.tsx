@@ -1495,326 +1495,345 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
 {/* ── Records ───────────────────────────────────────────── */}
 <div className={`space-y-6 pb-10 ${activeTab !== "Records" ? "hidden" : ""}`}>
     {/* Game Records */}
-  <Card className="shadow-sm border-primary/10">
-    <CardHeader className="bg-primary/5 pb-4 border-b">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-display tracking-wide">Game Records</h2>
-          <p className="text-sm text-muted-foreground">
-            Best single-game performances
-          </p>
-        </div>
-
-        {isAdmin && (
-          <Button
-            className="gap-2 hover-elevate"
-            onClick={() => {
-              setRecordType("Game");
-              setIsAddRecordOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add
-          </Button>
-        )}
+<Card>
+  <CardHeader>
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-bold text-display tracking-wide">
+          Game Records
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Best single-game performances
+        </p>
       </div>
-    </CardHeader>
 
-    <CardContent className="pt-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {[
-          "Passing Yards",
-          "Passing Touchdowns",
-          "Rushing Yards",
-          "Rushing Touchdowns",
-          "Receiving Yards",
-          "Receiving Touchdowns",
-          "Sacks",
-          "Interceptions",
-        ].map(category => {
-          const record = gameRecords
-  .filter(item => item.category === category)
-  .sort((a, b) => b.value - a.value)[0];
+      {isAdmin && (
+        <Button
+          className="gap-2 hover-elevate"
+          onClick={() => {
+            setRecordType("Game");
+            setIsAddRecordOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Add Record
+        </Button>
+      )}
+    </div>
+  </CardHeader>
 
-          return (
-            <div
-  key={category}
-  className="rounded-lg border p-4 flex items-center justify-between gap-3"
->
+  <CardContent>
+    <div className="divide-y rounded-lg border">
+      {[
+        "Passing Yards",
+        "Passing Touchdowns",
+        "Rushing Yards",
+        "Rushing Touchdowns",
+        "Receiving Yards",
+        "Receiving Touchdowns",
+        "Sacks",
+        "Interceptions",
+      ].map(category => {
+        const record = gameRecords
+          .filter(item => item.category === category)
+          .sort((a, b) => b.value - a.value)[0];
+
+        return (
+          <div
+            key={category}
+            className="flex items-center gap-4 px-4 py-4"
+          >
+            <div className="min-w-0 flex-1">
               <p className="font-semibold">{category}</p>
 
               {record ? (
-  <div className="mt-1 flex-1">
-                  <p className="text-lg font-bold">
-                    {record.value}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {record.playerName} • {record.season}
-                  </p>
-                </div>
-) : (
-  <p className="text-sm text-muted-foreground mt-1">
-    No record set
-  </p>
-)}
-
-{isAdmin && record && (
-  <Button
-    variant="ghost"
-    size="icon"
-    className="shrink-0 text-destructive"
-    onClick={async () => {
-      try {
-        const response = await fetch(
-          `/api/teams/${id}/records/${record.id}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to delete record");
-        }
-
-        queryClient.invalidateQueries({
-          queryKey: ["/api/teams", id, "records", "Game"],
-        });
-
-        toast({
-          title: "Record deleted",
-          description: "The record has been deleted successfully.",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete the record.",
-          variant: "destructive",
-        });
-      }
-    }}
-  >
-    ×
-  </Button>
-)}
-            </div>
-          );
-        })}
-      </div>
-    </CardContent>
-  </Card>
-
-    {/* Season Records */}
-  <Card className="shadow-sm border-primary/10">
-    <CardHeader className="bg-primary/5 pb-4 border-b">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-display tracking-wide">Season Records</h2>
-          <p className="text-sm text-muted-foreground">
-            Best single-season performances
-          </p>
-        </div>
-
-        {isAdmin && (
-          <Button
-            className="gap-2 hover-elevate"
-            onClick={() => {
-              setRecordType("Season");
-              setIsAddRecordOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add
-          </Button>
-        )}
-      </div>
-    </CardHeader>
-
-    <CardContent className="pt-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {[
-          "Passing Yards",
-          "Passing Touchdowns",
-          "Rushing Yards",
-          "Rushing Touchdowns",
-          "Receiving Yards",
-          "Receiving Touchdowns",
-          "Sacks",
-          "Interceptions",
-        ].map(category => {
-          const record = teamSeasonRecords
-  .filter(item => item.category === category)
-  .sort((a, b) => b.value - a.value)[0];
-
-          return (
-            <div
-  key={category}
-  className="rounded-lg border p-4 flex items-center justify-between gap-3"
->
-              <p className="font-semibold">{category}</p>
-
-              {record ? (
-                <div className="mt-1 flex-1">
-                  <p className="text-lg font-bold">
-                    {record.value}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {record.playerName} • {record.season}
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {record.playerName} • {record.season}
+                </p>
               ) : (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground">
                   No record set
                 </p>
               )}
-              {isAdmin && record && (
-  <Button
-    variant="ghost"
-    size="icon"
-    className="shrink-0 text-destructive"
-    onClick={async () => {
-      try {
-        const response = await fetch(
-          `/api/teams/${id}/records/${record.id}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to delete record");
-        }
-
-        queryClient.invalidateQueries({
-          queryKey: ["/api/teams", id, "records", "Season"],
-        });
-
-        toast({
-          title: "Record deleted",
-          description: "The record has been deleted successfully.",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete the record.",
-          variant: "destructive",
-        });
-      }
-    }}
-  >
-    ×
-  </Button>
-)}
             </div>
-          );
-        })}
+
+            {record && (
+              <p className="text-xl font-bold tabular-nums">
+                {record.value}
+              </p>
+            )}
+
+            {isAdmin && record && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 text-destructive"
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      `/api/teams/${id}/records/${record.id}`,
+                      {
+                        method: "DELETE",
+                      }
+                    );
+
+                    if (!response.ok) {
+                      throw new Error("Failed to delete record");
+                    }
+
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/teams", id, "records", "Game"],
+                    });
+
+                    toast({
+                      title: "Record deleted",
+                      description: "The record has been deleted successfully.",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to delete the record.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                ×
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </CardContent>
+</Card>
+    {/* Season Records */}
+<Card>
+  <CardHeader>
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-bold text-display tracking-wide">
+          Season Records
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Best single-season performances
+        </p>
       </div>
-    </CardContent>
-  </Card>
+
+      {isAdmin && (
+        <Button
+          className="gap-2 hover-elevate"
+          onClick={() => {
+            setRecordType("Season");
+            setIsAddRecordOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Add Record
+        </Button>
+      )}
+    </div>
+  </CardHeader>
+
+  <CardContent>
+    <div className="divide-y rounded-lg border">
+      {[
+        "Passing Yards",
+        "Passing Touchdowns",
+        "Rushing Yards",
+        "Rushing Touchdowns",
+        "Receiving Yards",
+        "Receiving Touchdowns",
+        "Sacks",
+        "Interceptions",
+      ].map(category => {
+        const record = teamSeasonRecords
+          .filter(item => item.category === category)
+          .sort((a, b) => b.value - a.value)[0];
+
+        return (
+          <div
+            key={category}
+            className="flex items-center gap-4 px-4 py-4"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">{category}</p>
+
+              {record ? (
+                <p className="text-sm text-muted-foreground">
+                  {record.playerName} • {record.season}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No record set
+                </p>
+              )}
+            </div>
+
+            {record && (
+              <p className="text-xl font-bold tabular-nums">
+                {record.value}
+              </p>
+            )}
+
+            {isAdmin && record && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 text-destructive"
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      `/api/teams/${id}/records/${record.id}`,
+                      {
+                        method: "DELETE",
+                      }
+                    );
+
+                    if (!response.ok) {
+                      throw new Error("Failed to delete record");
+                    }
+
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/teams", id, "records", "Season"],
+                    });
+
+                    toast({
+                      title: "Record deleted",
+                      description: "The record has been deleted successfully.",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to delete the record.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                ×
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </CardContent>
+</Card>
 
     {/* Career Records */}
-  <Card className="shadow-sm border-primary/10">
-    <CardHeader className="bg-primary/5 pb-4 border-b">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-bold text-display tracking-wide">Career Records</h2>
-          <p className="text-sm text-muted-foreground">
-            Best career performances
-          </p>
-        </div>
-
-        {isAdmin && (
-          <Button
-            className="gap-2 hover-elevate"
-            onClick={() => {
-              setRecordType("Career");
-              setIsAddRecordOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" /> Add
-          </Button>
-        )}
+<Card>
+  <CardHeader>
+    <div className="flex items-center justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-bold text-display tracking-wide">
+          Career Records
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Best career performances
+        </p>
       </div>
-    </CardHeader>
 
-    <CardContent className="pt-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {[
-          "Passing Yards",
-          "Passing Touchdowns",
-          "Rushing Yards",
-          "Rushing Touchdowns",
-          "Receiving Yards",
-          "Receiving Touchdowns",
-          "Sacks",
-          "Interceptions",
-        ].map(category => {
-          const record = careerRecords
-  .filter(item => item.category === category)
-  .sort((a, b) => b.value - a.value)[0];
+      {isAdmin && (
+        <Button
+          className="gap-2 hover-elevate"
+          onClick={() => {
+            setRecordType("Career");
+            setIsAddRecordOpen(true);
+          }}
+        >
+          <Plus className="h-4 w-4" />
+          Add Record
+        </Button>
+      )}
+    </div>
+  </CardHeader>
 
-          return (
-            <div
-  key={category}
-  className="rounded-lg border p-4 flex items-center justify-between gap-3"
->
+  <CardContent>
+    <div className="divide-y rounded-lg border">
+      {[
+        "Passing Yards",
+        "Passing Touchdowns",
+        "Rushing Yards",
+        "Rushing Touchdowns",
+        "Receiving Yards",
+        "Receiving Touchdowns",
+        "Sacks",
+        "Interceptions",
+      ].map(category => {
+        const record = careerRecords
+          .filter(item => item.category === category)
+          .sort((a, b) => b.value - a.value)[0];
+
+        return (
+          <div
+            key={category}
+            className="flex items-center gap-4 px-4 py-4"
+          >
+            <div className="min-w-0 flex-1">
               <p className="font-semibold">{category}</p>
 
               {record ? (
-                <div className="mt-1 flex-1">
-                  <p className="text-lg font-bold">
-                    {record.value}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {record.playerName} • {record.season}
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  {record.playerName} • {record.season}
+                </p>
               ) : (
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground">
                   No record set
                 </p>
               )}
-              {isAdmin && record && (
-  <Button
-    variant="ghost"
-    size="icon"
-    className="shrink-0 text-destructive"
-    onClick={async () => {
-      try {
-        const response = await fetch(
-          `/api/teams/${id}/records/${record.id}`,
-          {
-            method: "DELETE",
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to delete record");
-        }
-
-        queryClient.invalidateQueries({
-          queryKey: ["/api/teams", id, "records", "Career"],
-        });
-
-        toast({
-          title: "Record deleted",
-          description: "The record has been deleted successfully.",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to delete the record.",
-          variant: "destructive",
-        });
-      }
-    }}
-  >
-    ×
-  </Button>
-)}
             </div>
-          );
-        })}
-      </div>
-    </CardContent>
-  </Card>
+
+            {record && (
+              <p className="text-xl font-bold tabular-nums">
+                {record.value}
+              </p>
+            )}
+
+            {isAdmin && record && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 text-destructive"
+                onClick={async () => {
+                  try {
+                    const response = await fetch(
+                      `/api/teams/${id}/records/${record.id}`,
+                      {
+                        method: "DELETE",
+                      }
+                    );
+
+                    if (!response.ok) {
+                      throw new Error("Failed to delete record");
+                    }
+
+                    queryClient.invalidateQueries({
+                      queryKey: ["/api/teams", id, "records", "Career"],
+                    });
+
+                    toast({
+                      title: "Record deleted",
+                      description: "The record has been deleted successfully.",
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Error",
+                      description: "Failed to delete the record.",
+                      variant: "destructive",
+                    });
+                  }
+                }}
+              >
+                ×
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </CardContent>
+</Card>
 
   <Dialog open={isAddRecordOpen} onOpenChange={setIsAddRecordOpen}>
     <DialogContent className="sm:max-w-[500px]">
