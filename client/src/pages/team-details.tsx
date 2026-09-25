@@ -226,63 +226,85 @@ const barColor = hasNationalChampionship
           ? "bg-yellow-400"
           : "bg-green-500";
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-3">
-        <div className="w-14 shrink-0 text-sm font-bold text-foreground">{record.season}</div>
-        <div
-          className="h-7 flex-1 rounded-md bg-muted/70 overflow-hidden"
-          role="progressbar"
-          aria-label={`${record.season} win percentage`}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={barWidth}
-        >
-          <div
-  className={`h-full rounded-md ${barColor} transition-all flex items-center justify-end px-2 gap-1`}
-  style={{ width: `${barWidth}%` }}
->
-  {Array.from({ length: trophyCount }).map((_, index) => (
-    <Trophy
-      key={index}
-      className="h-4 w-4 text-white drop-shadow-sm shrink-0"
-    />
-  ))}
-</div>
-        </div>
-        <div className="w-24 shrink-0 text-right text-sm font-semibold text-muted-foreground">
-          {record.wins}-{record.losses}
-          <span className="block text-xs font-normal">{Math.round(winPercentage)}%</span>
-        </div>
-        {isAdmin && (
-          <div className="flex shrink-0 gap-1">
-            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[420px]">
-                <DialogHeader>
-                  <DialogTitle className="text-display text-2xl tracking-wide">Edit Season Record</DialogTitle>
-                </DialogHeader>
-                <SeasonRecordForm teamId={teamId} record={record} onSuccess={() => setIsEditOpen(false)} />
-              </DialogContent>
-            </Dialog>
+  <div className="flex min-w-[88px] flex-1 flex-col items-center">
+    {/* Season */}
+    <div className="mb-2 text-sm font-bold text-foreground">
+      {record.season}
+    </div>
+
+    {/* Record */}
+    <div className="mb-2 text-center text-sm font-semibold text-muted-foreground">
+      {record.wins}-{record.losses}
+      <span className="block text-xs font-normal">
+        {Math.round(winPercentage)}%
+      </span>
+    </div>
+
+    {/* Vertical bar */}
+    <div
+      className="flex h-36 w-12 items-end overflow-hidden rounded-t-md bg-muted/70"
+      role="progressbar"
+      aria-label={`${record.season} win percentage`}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={barWidth}
+    >
+      <div
+        className={`w-full ${barColor} transition-all flex flex-col items-center justify-end gap-1 px-1 py-1`}
+        style={{ height: `${Math.max(8, barWidth)}%` }}
+      >
+        {Array.from({ length: trophyCount }).map((_, index) => (
+          <Trophy
+            key={index}
+            className="h-4 w-4 text-white drop-shadow-sm shrink-0"
+          />
+        ))}
+      </div>
+    </div>
+
+    {/* Admin controls */}
+    {isAdmin && (
+      <div className="mt-2 flex shrink-0 gap-1">
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={() => deleteMutation.mutate()}
-              disabled={deleteMutation.isPending}
-              aria-label={`Delete ${record.season} season record`}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Pencil className="h-3.5 w-3.5" />
             </Button>
-          </div>
-        )}
+          </DialogTrigger>
+
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle className="text-display text-2xl tracking-wide">
+                Edit Season Record
+              </DialogTitle>
+            </DialogHeader>
+
+            <SeasonRecordForm
+              teamId={teamId}
+              record={record}
+              onSuccess={() => setIsEditOpen(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          onClick={() => deleteMutation.mutate()}
+          disabled={deleteMutation.isPending}
+          aria-label={`Delete ${record.season} season record`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
       </div>
+    )}
     </div>
-  );
+);
 }
 
 const DEPTH_POSITION_ALIASES: Record<string, string[]> = {
@@ -1190,7 +1212,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
           </CardHeader>
           <CardContent className="pt-6">
             {seasonRecordsLoading ? (
-              <div className="space-y-4">
+              <div className="flex items-end gap-4 overflow-x-auto pb-2">
                 <Skeleton className="h-7 w-full" />
                 <Skeleton className="h-7 w-full" />
                 <Skeleton className="h-7 w-full" />
