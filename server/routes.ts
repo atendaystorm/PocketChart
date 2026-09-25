@@ -519,10 +519,13 @@ console.log("Deleted records:", result.rowCount);
   app.post("/api/teams/:teamId/season-records", requireAuth, async (req, res) => {
     try {
       const bodySchema = z.object({
-        season: z.coerce.number().int().min(0),
-        wins: z.coerce.number().int().min(0),
-        losses: z.coerce.number().int().min(0),
-      });
+  season: z.coerce.number().int().min(0),
+  wins: z.coerce.number().int().min(0),
+  losses: z.coerce.number().int().min(0),
+  conferenceChampionship: z.boolean().default(false),
+  bowlVictory: z.boolean().default(false),
+  nationalChampionship: z.boolean().default(false),
+});
       const input = bodySchema.parse(req.body);
       const record = await storage.createSeasonRecord({
         teamId: Number(req.params.teamId),
@@ -650,10 +653,13 @@ console.log("Deleted records:", result.rowCount);
   app.put("/api/season-records/:id", requireAuth, async (req, res) => {
     try {
       const bodySchema = z.object({
-        season: z.coerce.number().int().min(0).optional(),
-        wins: z.coerce.number().int().min(0).optional(),
-        losses: z.coerce.number().int().min(0).optional(),
-      });
+  season: z.coerce.number().int().min(0).optional(),
+  wins: z.coerce.number().int().min(0).optional(),
+  losses: z.coerce.number().int().min(0).optional(),
+  conferenceChampionship: z.boolean().optional(),
+  bowlVictory: z.boolean().optional(),
+  nationalChampionship: z.boolean().optional(),
+});
       const input = bodySchema.parse(req.body);
       const record = await storage.updateSeasonRecord(Number(req.params.id), input);
       res.json(record);

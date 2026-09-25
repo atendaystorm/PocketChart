@@ -155,6 +155,9 @@ export const seasonRecords = pgTable("season_records", {
   season: integer("season").notNull(),
   wins: integer("wins").default(0).notNull(),
   losses: integer("losses").default(0).notNull(),
+  conferenceChampionship: boolean("conference_championship").default(false).notNull(),
+  bowlVictory: boolean("bowl_victory").default(false).notNull(),
+  nationalChampionship: boolean("national_championship").default(false).notNull(),
 });
 
 export const depthChartEntries = pgTable("depth_chart_entries", {

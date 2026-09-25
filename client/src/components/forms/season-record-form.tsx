@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +19,15 @@ export function SeasonRecordForm({ teamId, record, onSuccess }: SeasonRecordForm
   const [season, setSeason] = useState(record ? String(record.season) : "");
   const [wins, setWins] = useState(record ? String(record.wins) : "");
   const [losses, setLosses] = useState(record ? String(record.losses) : "");
+    const [conferenceChampionship, setConferenceChampionship] = useState(
+    record?.conferenceChampionship ?? false
+  );
+  const [bowlVictory, setBowlVictory] = useState(
+    record?.bowlVictory ?? false
+  );
+  const [nationalChampionship, setNationalChampionship] = useState(
+    record?.nationalChampionship ?? false
+  );
   const [error, setError] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -25,10 +35,13 @@ export function SeasonRecordForm({ teamId, record, onSuccess }: SeasonRecordForm
   const mutation = useMutation({
     mutationFn: async () => {
       const values = {
-        season: Number(season),
-        wins: Number(wins),
-        losses: Number(losses),
-      };
+  season: Number(season),
+  wins: Number(wins),
+  losses: Number(losses),
+  conferenceChampionship,
+  bowlVictory,
+  nationalChampionship,
+};
       if (
         !season.trim() ||
         !Number.isInteger(values.season) ||
@@ -91,6 +104,48 @@ export function SeasonRecordForm({ teamId, record, onSuccess }: SeasonRecordForm
             onChange={(event) => setWins(event.target.value)}
           />
         </div>
+
+              <div className="space-y-3">
+        <Label>Season Achievements</Label>
+
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="conference-championship"
+            checked={conferenceChampionship}
+            onCheckedChange={(checked) =>
+              setConferenceChampionship(checked === true)
+            }
+          />
+          <Label htmlFor="conference-championship">
+            Conference Championship
+          </Label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="bowl-victory"
+            checked={bowlVictory}
+            onCheckedChange={(checked) =>
+              setBowlVictory(checked === true)
+            }
+          />
+          <Label htmlFor="bowl-victory">
+            Bowl Victory
+          </Label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="national-championship"
+            checked={nationalChampionship}
+            onCheckedChange={(checked) =>
+              setNationalChampionship(checked === true)
+            }
+          />
+          <Label htmlFor="national-championship">
+            National Championship
+          </Label>
+        </div>
+      </div>
         <div className="space-y-2">
           <Label htmlFor="season-losses">Losses</Label>
           <Input

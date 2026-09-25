@@ -177,7 +177,15 @@ function MomentCard({ moment, isAdmin, teamId }: { moment: Moment; isAdmin: bool
   );
 }
 
-function SeasonRecordRow({ record, isAdmin, teamId }: { record: SeasonRecord; isAdmin: boolean; teamId: number }) {
+function SeasonRecordRow({
+  record,
+  isAdmin,
+  teamId,
+}: {
+  record: SeasonRecord;
+  isAdmin: boolean;
+  teamId: number;
+}) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -192,16 +200,31 @@ function SeasonRecordRow({ record, isAdmin, teamId }: { record: SeasonRecord; is
   const games = record.wins + record.losses;
   const winPercentage = games > 0 ? (record.wins / games) * 100 : 0;
   const barWidth = Math.min(100, Math.max(0, winPercentage));
-  const barColor = games > 12
-    ? "bg-[#D4AF37]"
+
+const trophyCount = Math.min(
+  3,
+  [
+    record.conferenceChampionship,
+    record.bowlVictory,
+    record.nationalChampionship,
+  ].filter(Boolean).length
+);
+
+const hasNationalChampionship = record.nationalChampionship;
+const hasBowlVictory = record.bowlVictory;
+const hasConferenceChampionship = record.conferenceChampionship;
+
+const barColor = hasNationalChampionship
+  ? "bg-[#D4AF37]"
+  : hasBowlVictory || hasConferenceChampionship
+    ? "bg-blue-500"
     : winPercentage < 25
       ? "bg-red-500"
       : winPercentage < 50
-        ? "bg-yellow-400"
+        ? "bg-orange-500"
         : winPercentage < 75
-          ? "bg-green-500"
-          : "bg-blue-500";
-
+          ? "bg-yellow-400"
+          : "bg-green-500";
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
@@ -215,9 +238,16 @@ function SeasonRecordRow({ record, isAdmin, teamId }: { record: SeasonRecord; is
           aria-valuenow={barWidth}
         >
           <div
-            className={`h-full rounded-md ${barColor} transition-all`}
-            style={{ width: `${barWidth}%` }}
-          />
+  className={`h-full rounded-md ${barColor} transition-all flex items-center justify-end px-2 gap-1`}
+  style={{ width: `${barWidth}%` }}
+>
+  {Array.from({ length: trophyCount }).map((_, index) => (
+    <Trophy
+      key={index}
+      className="h-4 w-4 text-white drop-shadow-sm shrink-0"
+    />
+  ))}
+</div>
         </div>
         <div className="w-24 shrink-0 text-right text-sm font-semibold text-muted-foreground">
           {record.wins}-{record.losses}
@@ -861,7 +891,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
           </CardContent>
         </Card>
 
-        {/* Season records */}
+        {/* Season Results */}
         <Card className={`shadow-sm border-primary/10 ${activeTab !== "Overview" ? "hidden" : ""}`}>
           <CardHeader className="bg-primary/5 pb-4 border-b">
             <div className="flex items-center justify-between gap-3">
@@ -870,7 +900,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
                   <BarChart3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-display tracking-wide">Season Records</h2>
+                  <h2 className="text-2xl font-bold text-display tracking-wide">Season Results</h2>
                   <p className="text-sm text-muted-foreground">School win percentage by season</p>
                 </div>
               </div>
@@ -901,23 +931,21 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
             ) : sortedSeasonRecords.length > 0 ? (
               <div className="space-y-4">
                 {sortedSeasonRecords.map(record => (
-                  <SeasonRecordRow key={record.id} record={record} isAdmin={isAdmin} teamId={team.id} />
+                  <SeasonRecordRow
+  key={record.id}
+  record={record}
+  isAdmin={isAdmin}
+  teamId={team.id}
+/>
                 ))}
-                <div className="flex flex-wrap gap-x-5 gap-y-2 border-t pt-4 text-xs font-medium text-muted-foreground">
-                  <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-red-500" /> Below 25%</span>
-                  <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-yellow-400" /> Below 50%</span>
-                  <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-green-500" /> Below 75%</span>
-                  <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-blue-500" /> Below 100%</span>
-                  <span className="flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-full bg-[#D4AF37]" /> More than 12 games</span>
-                </div>
               </div>
 ) : (
   <div className="py-8 text-center text-muted-foreground">
-    <p className="font-medium">No season records yet.</p>
+    <p className="font-medium">No season results yet.</p>
     <p className="text-sm mt-1">
       {isAdmin
-        ? "Add the school’s first season record above."
-        : "Check back soon for the school's season history."}
+        ? "Add the school’s first season result above."
+        : "Check back soon for the school's season results."}
     </p>
   </div>
 )}
