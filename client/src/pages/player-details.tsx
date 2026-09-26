@@ -30,6 +30,10 @@ export default function PlayerDetails() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddStatOpen, setIsAddStatOpen] = useState(false);
   const [editingStat, setEditingStat] = useState<any>(null);
+  const [qbChartTab, setQbChartTab] = useState<"passing" | "rushing">("passing");
+  const [rbChartTab, setRbChartTab] = useState<"rushing" | "receiving">("rushing");
+  const [wrChartTab, setWrChartTab] = useState<"receiving" | "rushing">("receiving");
+  const [defChartTab, setDefChartTab] = useState<"production" | "turnovers">("production");
 
   if (isLoading) {
     return (
@@ -79,74 +83,159 @@ export default function PlayerDetails() {
   // Each chart can have multiple lines: { label, lines: [{ key, color, name }] }
   const statsToShow: { label: string; lines: { key: string; color: string; name: string }[] }[] = [];
   if (isQB) {
-    statsToShow.push({
-      label: 'Yards',
-      lines: [
-        { key: 'Pass', color: 'hsl(var(--chart-1))', name: 'Passing Yds' },
-        { key: 'Rush', color: 'hsl(var(--chart-2))', name: 'Rushing Yds' },
-      ]
-    });
-    statsToShow.push({
-      label: 'Touchdowns & INTs',
-      lines: [
-        { key: 'PassTDs', color: 'hsl(var(--chart-5))', name: 'Passing TDs' },
-        { key: 'RushTDs', color: 'hsl(var(--chart-3))', name: 'Rushing TDs' },
-        { key: 'INTs', color: 'hsl(var(--chart-1))', name: 'INTs' },
-      ]
-    });
-    statsToShow.push({
-      label: 'Comp % & Passer Rating',
-      lines: [
-        { key: 'CompPct', color: 'hsl(var(--chart-2))', name: 'Comp %' },
-        { key: 'PR', color: 'hsl(var(--chart-4))', name: 'Passer Rating' },
-      ]
-    });
+  statsToShow.push({
+    label: 'Passing Yards',
+    lines: [
+      { key: 'Pass', color: 'hsl(var(--chart-1))', name: 'Passing Yards' },
+    ]
+  });
+
+  statsToShow.push({
+    label: 'Passing TDs',
+    lines: [
+      { key: 'PassTDs', color: 'hsl(var(--chart-5))', name: 'Passing TDs' },
+    ]
+  });
+
+  statsToShow.push({
+    label: 'Comp %',
+    lines: [
+      { key: 'CompPct', color: 'hsl(var(--chart-2))', name: 'Completion %' },
+    ]
+  });
+
+  statsToShow.push({
+    label: 'Interceptions',
+    lines: [
+      { key: 'INTs', color: 'hsl(var(--chart-3))', name: 'Interceptions' },
+    ]
+  });
+
+  statsToShow.push({
+    label: 'Rushing Yards',
+    lines: [
+      { key: 'Rush', color: 'hsl(var(--chart-2))', name: 'Rushing Yards' },
+    ]
+  });
+
+  statsToShow.push({
+    label: 'Rushing TDs',
+    lines: [
+      { key: 'RushTDs', color: 'hsl(var(--chart-5))', name: 'Rushing TDs' },
+    ]
+  });
   } else if (isRB) {
     statsToShow.push({
-      label: 'Yards',
+      label: 'Rushing Yards',
       lines: [
-        { key: 'Rush', color: 'hsl(var(--chart-2))', name: 'Rushing Yds' },
-        { key: 'Rec', color: 'hsl(var(--chart-3))', name: 'Receiving Yds' },
-        { key: 'BrokenTackles', color: 'hsl(var(--chart-4))', name: 'Broken Tackles' },
+        { key: 'Rush', color: 'hsl(var(--chart-2))', name: 'Rushing Yards' },
       ]
     });
+
     statsToShow.push({
-      label: 'Touchdowns & Fumbles',
+      label: 'Rushing TDs',
       lines: [
         { key: 'RushTDs', color: 'hsl(var(--chart-5))', name: 'Rushing TDs' },
-        { key: 'RecTDs', color: 'hsl(var(--chart-3))', name: 'Receiving TDs' },
-        { key: 'Fumbles', color: 'hsl(0 72% 51%)', name: 'Fumbles' },
       ]
     });
+
     statsToShow.push({
-      label: 'Averages',
+      label: 'Receiving Yards',
       lines: [
-        { key: 'AvgRushPerGame', color: 'hsl(var(--chart-2))', name: 'Rush Yds/Game' },
-        { key: 'AvgYdsPerCarry', color: 'hsl(var(--chart-4))', name: 'Yds/Carry' },
+        { key: 'Rec', color: 'hsl(var(--chart-3))', name: 'Receiving Yards' },
       ]
     });
-  } else if (isWR) {
-    statsToShow.push({ label: 'Receiving Yards', lines: [{ key: 'Rec', color: 'hsl(var(--chart-3))', name: 'Rec Yds' }] });
-    statsToShow.push({ label: 'Receiving TDs', lines: [{ key: 'RecTDs', color: 'hsl(var(--chart-5))', name: 'Rec TDs' }] });
-  } else if (isDefense) {
+
     statsToShow.push({
-      label: 'Tackles, TFLs & Sacks',
+      label: 'Receiving TDs',
       lines: [
-        { key: 'Tackles', color: 'hsl(var(--chart-4))', name: 'Tackles' },
-        { key: 'TFL', color: 'hsl(var(--chart-2))', name: 'TFL' },
-        { key: 'Sacks', color: 'hsl(var(--chart-1))', name: 'Sacks' },
+        { key: 'RecTDs', color: 'hsl(var(--chart-5))', name: 'Receiving TDs' },
       ]
     });
-    statsToShow.push({
-      label: 'Turnovers & Impact',
-      lines: [
-        { key: 'INTs', color: 'hsl(var(--chart-3))', name: 'Interceptions' },
-        { key: 'PDs', color: 'hsl(var(--chart-5))', name: 'Pass Deflections' },
-        { key: 'DefTDs', color: 'hsl(var(--chart-1))', name: 'Def TDs' },
-        { key: 'FF', color: 'hsl(var(--chart-2))', name: 'Forced Fumbles' },
-        { key: 'FR', color: 'hsl(var(--chart-4))', name: 'Fumble Rec' },
-      ]
-    });
+        } else if (isWR) {
+      statsToShow.push({
+        label: 'Receiving Yards',
+        lines: [
+          { key: 'Rec', color: 'hsl(var(--chart-3))', name: 'Receiving Yards' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Receiving TDs',
+        lines: [
+          { key: 'RecTDs', color: 'hsl(var(--chart-5))', name: 'Receiving TDs' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Rushing Yards',
+        lines: [
+          { key: 'Rush', color: 'hsl(var(--chart-2))', name: 'Rushing Yards' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Rushing TDs',
+        lines: [
+          { key: 'RushTDs', color: 'hsl(var(--chart-5))', name: 'Rushing TDs' },
+        ]
+      });
+    } else if (isDefense) {
+      statsToShow.push({
+        label: 'Tackles',
+        lines: [
+          { key: 'Tackles', color: 'hsl(var(--chart-4))', name: 'Tackles' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Tackles for Loss',
+        lines: [
+          { key: 'TFL', color: 'hsl(var(--chart-2))', name: 'Tackles for Loss' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Sacks',
+        lines: [
+          { key: 'Sacks', color: 'hsl(var(--chart-1))', name: 'Sacks' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Pass Deflections',
+        lines: [
+          { key: 'PDs', color: 'hsl(var(--chart-5))', name: 'Pass Deflections' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Interceptions',
+        lines: [
+          { key: 'INTs', color: 'hsl(var(--chart-3))', name: 'Interceptions' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Forced Fumbles',
+        lines: [
+          { key: 'FF', color: 'hsl(var(--chart-2))', name: 'Forced Fumbles' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Fumbles Recovered',
+        lines: [
+          { key: 'FR', color: 'hsl(var(--chart-4))', name: 'Fumbles Recovered' },
+        ]
+      });
+
+      statsToShow.push({
+        label: 'Defensive Touchdowns',
+        lines: [
+          { key: 'DefTDs', color: 'hsl(var(--chart-1))', name: 'Defensive Touchdowns' },
+        ]
+      });
   } else {
     statsToShow.push({ label: 'Yards', lines: [{ key: 'Rush', color: 'hsl(var(--chart-2))', name: 'Rush Yds' }, { key: 'Rec', color: 'hsl(var(--chart-3))', name: 'Rec Yds' }] });
     statsToShow.push({ label: 'Touchdowns', lines: [{ key: 'TDs', color: 'hsl(var(--chart-5))', name: 'TDs' }] });
@@ -170,7 +259,6 @@ export default function PlayerDetails() {
       Sacks: s.sacks,
       INTs: s.interceptions,
       CompPct: (s as any).completionPercentage || 0,
-      PR: (s as any).passerRating || 0,
       BrokenTackles: (s as any).brokenTackles || 0,
       Fumbles: (s as any).fumbles || 0,
       AvgRushPerGame: Number(s.gamesPlayed) > 0 ? Math.round((Number(s.rushingYards) / Number(s.gamesPlayed)) * 10) / 10 : 0,
@@ -226,30 +314,71 @@ export default function PlayerDetails() {
           )}
         </div>
         
-        <div className="p-8 md:w-2/3 flex flex-col relative z-10">
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Badge className="px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
-              {player.position}
-            </Badge>
-            <Badge variant="secondary" className="px-4 py-1 text-sm">
-              {(player as any).status === 'Drafted' ? `Drafted (R${(player as any).draftRound} P${(player as any).draftPick})` : (player as any).status}
-            </Badge>
-            <Badge variant="outline" className="px-4 py-1 text-sm">
-              Dev Trait: {(player as any).devTrait || "Normal"}
-            </Badge>
-            <Badge variant="outline" className="px-4 py-1 text-sm">
-              Overall Rating: {(player as any).overallRating || 0}
-            </Badge>
-            {player.height && (
-              <Badge variant="outline" className="px-4 py-1 text-sm">
-                HT: {player.height}
+                <div className="p-8 md:w-2/3 flex flex-col relative z-10">
+          <div className="flex flex-col mb-6">
+            <div className="flex flex-wrap gap-2">
+              <Badge className="px-4 py-1 text-sm bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+                {player.position}
               </Badge>
-            )}
-            {player.weight && (
-              <Badge variant="outline" className="px-4 py-1 text-sm">
-                WT: {player.weight} lbs
+
+              <Badge variant="secondary" className="px-4 py-1 text-sm">
+                {(player as any).status === 'Drafted'
+                  ? `Drafted (R${(player as any).draftRound} P${(player as any).draftPick})`
+                  : (player as any).status}
               </Badge>
-            )}
+
+              {player.height && (
+                <Badge variant="outline" className="px-4 py-1 text-sm">
+                  HT: {player.height}
+                </Badge>
+              )}
+
+              {player.weight && (
+                <Badge variant="outline" className="px-4 py-1 text-sm">
+                  WT: {player.weight} lbs
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 mt-4">
+              <div
+                className={`flex items-center justify-center w-20 h-20 rounded-xl border ${
+                  ((player as any).overallRating || 0) < 65
+                    ? "bg-red-500/10 border-red-500/30"
+                    : ((player as any).overallRating || 0) < 75
+                      ? "bg-yellow-400/10 border-yellow-400/30"
+                      : ((player as any).overallRating || 0) < 85
+                        ? "bg-green-500/10 border-green-500/30"
+                        : ((player as any).overallRating || 0) < 95
+                          ? "bg-blue-500/10 border-blue-500/30"
+                          : "bg-[#D4AF37]/10 border-[#D4AF37]/30"
+                }`}
+              >
+                <span
+                  className={`text-5xl font-black leading-none ${
+                    ((player as any).overallRating || 0) < 65
+                      ? "text-red-500"
+                      : ((player as any).overallRating || 0) < 75
+                        ? "text-yellow-500"
+                        : ((player as any).overallRating || 0) < 85
+                          ? "text-green-500"
+                          : ((player as any).overallRating || 0) < 95
+                            ? "text-blue-500"
+                            : "text-[#D4AF37]"
+                  }`}
+                >
+                  {(player as any).overallRating || 0}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-center w-20 h-20 rounded-xl bg-muted/40 border border-border/70">
+                <img
+                  src={`/dev-traits/${((player as any).devTrait || "Normal").toLowerCase()}dev.png`}
+                  alt={(player as any).devTrait || "Normal"}
+                  className="h-14 w-14 object-contain"
+                />
+              </div>
+            </div>
           </div>
 
           {player.accolades && player.accolades.length > 0 && (
@@ -310,48 +439,593 @@ export default function PlayerDetails() {
       </div>
 
       {chartData.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {statsToShow.map((chart) => (
-            <Card key={chart.label} className="shadow-sm">
-              <CardContent className="p-6">
-                <h3 className="text-sm font-bold text-display tracking-wider mb-1 flex items-center gap-2 text-muted-foreground uppercase">
-                  <ActivitySquare className="h-4 w-4" /> {chart.label}
+  <div className="mb-8">
+    {isQB ? (
+      <>
+        {/* QB chart tabs */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-3xl font-bold text-display tracking-wide">
+              Career Progression
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Season-by-season statistical trajectory
+            </p>
+          </div>
+
+          <div className="flex rounded-lg border bg-muted/40 p-1">
+            <button
+              type="button"
+              onClick={() => setQbChartTab("passing")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                qbChartTab === "passing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Passing
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setQbChartTab("rushing")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                qbChartTab === "rushing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Rushing
+            </button>
+          </div>
+        </div>
+
+        {/* QB charts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statsToShow
+            .filter((chart) =>
+              qbChartTab === "passing"
+                                ? [
+                    "Passing Yards",
+                    "Passing TDs",
+                    "Completion %",
+                    "Interceptions",
+                  ].includes(chart.label)
+                : [
+                    "Rushing Yards",
+                    "Rushing TDs",
+                  ].includes(chart.label)
+            )
+            .map((chart) => (
+              <Card
+                key={chart.label}
+                className="shadow-sm overflow-hidden border-border/70"
+              >
+                <CardContent className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-sm font-bold text-display tracking-wide">
+                      {chart.label}
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Season progression
+                    </p>
+                  </div>
+
+                  <div className="h-[190px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={chartData}
+                        margin={{
+                          top: 10,
+                          right: 8,
+                          left: -18,
+                          bottom: 0,
+                        }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          className="opacity-20"
+                        />
+
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10 }}
+                          dy={5}
+                        />
+
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9 }}
+                          width={38}
+                        />
+
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "10px",
+                            border: "1px solid hsl(var(--border))",
+                            backgroundColor: "hsl(var(--background))",
+                            boxShadow:
+                              "0 8px 24px rgba(0,0,0,0.12)",
+                            fontSize: "12px",
+                          }}
+                          labelStyle={{
+                            fontWeight: 700,
+                            marginBottom: "4px",
+                          }}
+                        />
+
+                        {chart.lines.map((line) => (
+                          <Line
+                            key={line.key}
+                            type="monotone"
+                            dataKey={line.key}
+                            name={line.name}
+                            stroke={line.color}
+                            strokeWidth={2.5}
+                            dot={{
+                              r: 3,
+                              strokeWidth: 2,
+                              fill: "hsl(var(--background))",
+                            }}
+                            activeDot={{
+                              r: 5,
+                              strokeWidth: 2,
+                            }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+                        ))}
+        </div>
+      </>
+    ) : isRB ? (
+      <>
+        {/* RB chart tabs */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-3xl font-bold text-display tracking-wide">
+              Career Progression
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Season-by-season statistical trajectory
+            </p>
+          </div>
+
+          <div className="flex rounded-lg border bg-muted/40 p-1">
+            <button
+              type="button"
+              onClick={() => setRbChartTab("rushing")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                rbChartTab === "rushing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Rushing
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setRbChartTab("receiving")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                rbChartTab === "receiving"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Receiving
+            </button>
+          </div>
+        </div>
+
+        {/* RB charts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statsToShow
+            .filter((chart) =>
+              rbChartTab === "rushing"
+                ? ["Rushing Yards", "Rushing TDs"].includes(chart.label)
+                : ["Receiving Yards", "Receiving TDs"].includes(chart.label)
+            )
+            .map((chart) => (
+              <Card
+                key={chart.label}
+                className="shadow-sm overflow-hidden border-border/70"
+              >
+                <CardContent className="p-4">
+                  <div className="mb-3">
+                    <h3 className="text-sm font-bold text-display tracking-wide">
+                      {chart.label}
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Season progression
+                    </p>
+                  </div>
+
+                  <div className="h-[190px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={chartData}
+                        margin={{
+                          top: 10,
+                          right: 8,
+                          left: -18,
+                          bottom: 0,
+                        }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          className="opacity-20"
+                        />
+
+                        <XAxis
+                          dataKey="name"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 10 }}
+                          dy={5}
+                        />
+
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9 }}
+                          width={38}
+                        />
+
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "10px",
+                            border: "1px solid hsl(var(--border))",
+                            backgroundColor: "hsl(var(--background))",
+                            boxShadow:
+                              "0 8px 24px rgba(0,0,0,0.12)",
+                            fontSize: "12px",
+                          }}
+                          labelStyle={{
+                            fontWeight: 700,
+                            marginBottom: "4px",
+                          }}
+                        />
+
+                        {chart.lines.map((line) => (
+                          <Line
+                            key={line.key}
+                            type="monotone"
+                            dataKey={line.key}
+                            name={line.name}
+                            stroke={line.color}
+                            strokeWidth={2.5}
+                            dot={{
+                              r: 3,
+                              strokeWidth: 2,
+                              fill: "hsl(var(--background))",
+                            }}
+                            activeDot={{
+                              r: 5,
+                              strokeWidth: 2,
+                            }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+             ))}
+        </div>
+      </>
+    ) : isWR ? (
+      <>
+        {/* WR / TE chart tabs */}
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-3xl font-bold text-display tracking-wide">
+              Career Progression
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Season-by-season statistical trajectory
+            </p>
+          </div>
+
+          <div className="flex rounded-lg border bg-muted/40 p-1">
+            <button
+              type="button"
+              onClick={() => setWrChartTab("receiving")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                wrChartTab === "receiving"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Receiving
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setWrChartTab("rushing")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                wrChartTab === "rushing"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Rushing
+            </button>
+          </div>
+        </div>
+
+        {/* WR / TE charts */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statsToShow
+            .filter((chart) =>
+              wrChartTab === "receiving"
+                ? ["Receiving Yards", "Receiving TDs"].includes(chart.label)
+                : ["Rushing Yards", "Rushing TDs"].includes(chart.label)
+            )
+            .map((chart) => (
+          <Card
+            key={chart.label}
+            className="shadow-sm overflow-hidden border-border/70"
+          >
+            <CardContent className="p-4">
+              <div className="mb-3">
+                <h3 className="text-sm font-bold text-display tracking-wide">
+                  {chart.label}
                 </h3>
-                <div className="flex flex-wrap gap-3 mb-3">
-                  {chart.lines.map(line => (
-                    <span key={line.key} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                      <span className="inline-block h-2 w-5 rounded-full" style={{ backgroundColor: line.color }} />
-                      {line.name}
-                    </span>
-                  ))}
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Season progression
+                </p>
+              </div>
+
+              <div className="h-[190px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{
+                      top: 10,
+                      right: 8,
+                      left: -18,
+                      bottom: 0,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      className="opacity-20"
+                    />
+
+                    <XAxis
+                      dataKey="name"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 10 }}
+                      dy={5}
+                    />
+
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 9 }}
+                      width={38}
+                    />
+
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "10px",
+                        border: "1px solid hsl(var(--border))",
+                        backgroundColor: "hsl(var(--background))",
+                        boxShadow:
+                          "0 8px 24px rgba(0,0,0,0.12)",
+                        fontSize: "12px",
+                      }}
+                    />
+
+                    {chart.lines.map((line) => (
+                      <Line
+                        key={line.key}
+                        type="monotone"
+                        dataKey={line.key}
+                        name={line.name}
+                        stroke={line.color}
+                        strokeWidth={2.5}
+                        dot={{
+                          r: 3,
+                          strokeWidth: 2,
+                          fill: "hsl(var(--background))",
+                        }}
+                        activeDot={{
+                          r: 5,
+                          strokeWidth: 2,
+                        }}
+                        connectNulls
+                      />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+  </div>
+      </>
+        ) : isDefense ? (
+      <>
+                <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-3xl font-bold text-display tracking-wide">
+              Career Progression
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Season-by-season statistical trajectory
+            </p>
+          </div>
+
+          <div className="flex rounded-lg border bg-muted/40 p-1">
+            <button
+              type="button"
+              onClick={() => setDefChartTab("production")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                defChartTab === "production"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Production
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDefChartTab("turnovers")}
+              className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                defChartTab === "turnovers"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Turnovers
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statsToShow
+            .filter((chart) =>
+              defChartTab === "production"
+                ? [
+                    "Tackles",
+                    "Tackles for Loss",
+                    "Sacks",
+                    "Pass Deflections",
+                  ].includes(chart.label)
+                : [
+                    "Interceptions",
+                    "Forced Fumbles",
+                    "Fumbles Recovered",
+                    "Defensive Touchdowns",
+                  ].includes(chart.label)
+            )
+            .map((chart) => (
+              <Card
+                key={chart.label}
+                className="shadow-sm overflow-hidden border-border/70"
+              >
+                <CardContent className="p-4">
+                  <div className="mb-2">
+                    <h3 className="font-semibold text-sm">{chart.label}</h3>
+                  </div>
+
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          className="stroke-muted"
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 11 }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11 }}
+                          tickLine={false}
+                          axisLine={false}
+                          width={35}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "10px",
+                            border: "1px solid hsl(var(--border))",
+                            backgroundColor: "hsl(var(--background))",
+                            boxShadow:
+                              "0 8px 24px rgba(0,0,0,0.12)",
+                            fontSize: "12px",
+                          }}
+                        />
+
+                        {chart.lines.map((line) => (
+                          <Line
+                            key={line.key}
+                            type="monotone"
+                            dataKey={line.key}
+                            name={line.name}
+                            stroke={line.color}
+                            strokeWidth={2.5}
+                            dot={{
+                              r: 3,
+                              strokeWidth: 2,
+                              fill: "hsl(var(--background))",
+                            }}
+                            activeDot={{
+                              r: 5,
+                              strokeWidth: 2,
+                            }}
+                            connectNulls
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      </>
+    ) : (
+      <>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statsToShow.map((chart) => (
+            <Card
+              key={chart.label}
+              className="shadow-sm overflow-hidden border-border/70"
+            >
+              <CardContent className="p-4">
+                <div className="mb-2">
+                  <h3 className="font-semibold text-sm">{chart.label}</h3>
                 </div>
-                <div className="h-[200px] w-full">
+
+                <div className="h-48">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={chartData}
-                      margin={{ top: 10, right: 20, left: -10, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                    <LineChart data={chartData}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        className="stroke-muted"
+                      />
                       <XAxis
                         dataKey="name"
-                        axisLine={false}
+                        tick={{ fontSize: 11 }}
                         tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        axisLine={false}
                       />
                       <YAxis
-                        axisLine={false}
+                        tick={{ fontSize: 11 }}
                         tickLine={false}
-                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                        width={40}
+                        axisLine={false}
+                        width={35}
                       />
                       <Tooltip
-                        contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
-                        formatter={(value: number, key: string) => {
-                          const line = chart.lines.find(l => l.key === key);
-                          return [value, line?.name ?? key];
+                        contentStyle={{
+                          borderRadius: "10px",
+                          border: "1px solid hsl(var(--border))",
+                          backgroundColor: "hsl(var(--background))",
+                          boxShadow:
+                            "0 8px 24px rgba(0,0,0,0.12)",
+                          fontSize: "12px",
                         }}
                       />
-                      {chart.lines.map(line => (
+
+                      {chart.lines.map((line) => (
                         <Line
                           key={line.key}
                           type="monotone"
@@ -359,9 +1033,16 @@ export default function PlayerDetails() {
                           name={line.name}
                           stroke={line.color}
                           strokeWidth={2.5}
-                          dot={{ fill: line.color, r: 4, strokeWidth: 0 }}
-                          activeDot={{ r: 6, strokeWidth: 0 }}
-                          animationDuration={1200}
+                          dot={{
+                            r: 3,
+                            strokeWidth: 2,
+                            fill: "hsl(var(--background))",
+                          }}
+                          activeDot={{
+                            r: 5,
+                            strokeWidth: 2,
+                          }}
+                          connectNulls
                         />
                       ))}
                     </LineChart>
@@ -371,7 +1052,11 @@ export default function PlayerDetails() {
             </Card>
           ))}
         </div>
-      )}
+      </>
+    )}
+  </div>
+)}
+
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-3xl font-bold text-display tracking-wide">Season Stats</h2>
