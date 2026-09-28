@@ -982,7 +982,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
   const sortedMoments = [...moments].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
-  const sortedSeasonRecords = [...seasonRecords].sort((a, b) => b.season - a.season);
+  const sortedSeasonRecords = [...seasonRecords].sort((a, b) => a.season - b.season);
   const depthChartSeasons = Array.from(new Set(depthChartEntries.map(entry => entry.season))).sort((a, b) => b - a);
 
   return (
@@ -1218,16 +1218,17 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
                 <Skeleton className="h-7 w-full" />
               </div>
             ) : sortedSeasonRecords.length > 0 ? (
-              <div className="space-y-4">
-                {sortedSeasonRecords.map(record => (
-                  <SeasonRecordRow
-  key={record.id}
-  record={record}
-  isAdmin={isAdmin}
-  teamId={team.id}
-/>
-                ))}
-              </div>
+              <div className="flex items-end gap-4 overflow-x-auto pb-2">
+  {sortedSeasonRecords.map(record => (
+    <div key={record.id} className="shrink-0">
+      <SeasonRecordRow
+        record={record}
+        isAdmin={isAdmin}
+        teamId={team.id}
+      />
+    </div>
+  ))}
+</div>
 ) : (
   <div className="py-8 text-center text-muted-foreground">
     <p className="font-medium">No season results yet.</p>
