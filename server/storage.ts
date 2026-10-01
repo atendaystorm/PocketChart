@@ -3,6 +3,7 @@ import { db } from "./db";
 import {
   teams, players, playerStats, users, passwordResetTokens, leagues, moments,
   seasonRecords, depthChartEntries, teamRecords, teamAwards, personalAwards,
+  personalAwardTypes,
   recruitingClasses, recruitingPlayers,
   type Team, type InsertTeam, type UpdateTeamRequest, type TeamWithPlayers,
   type Player, type InsertPlayer, type UpdatePlayerRequest, type PlayerWithStats,
@@ -14,7 +15,7 @@ import {
   type DepthChartEntry, type InsertDepthChartEntry,
   type TeamRecord, type InsertTeamRecord,
   type TeamAward, type InsertTeamAward,
-  type PersonalAward, type InsertPersonalAward,
+  type PersonalAward, type InsertPersonalAward, type PersonalAwardType,
   type RecruitingClass, type InsertRecruitingClass,
   type RecruitingPlayer, type InsertRecruitingPlayer,
 } from "@shared/schema";
@@ -29,8 +30,11 @@ export interface IStorage {
     createTeamRecord(record: InsertTeamRecord): Promise<TeamRecord>;
     getTeamAwards(teamId: number): Promise<TeamAward[]>;
     createTeamAward(award: InsertTeamAward): Promise<TeamAward>;
+    deleteTeamAward(id: number): Promise<void>;
     getPersonalAwards(teamId: number): Promise<PersonalAward[]>;
     createPersonalAward(award: InsertPersonalAward): Promise<PersonalAward>;
+    deletePersonalAward(id: number): Promise<void>;
+    getPersonalAwardTypes(): Promise<PersonalAwardType[]>;
     createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
     getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
     markPasswordResetTokenUsed(id: number): Promise<void>;
@@ -354,20 +358,44 @@ async createTeamRecord(record: InsertTeamRecord): Promise<TeamRecord> {
 }
 
   async getPersonalAwards(teamId: number): Promise<PersonalAward[]> {
+  return await db
+    .select({
+      id: personalAwards.id,
+      teamId: personalAwards.teamId,
+      playerName: personalAwards.playerName,
+      awardTypeId: personalAwards.awardTypeId,
+      season: personalAwards.season,
+      awardName: personalAwardTypes.awardName,
+      awardShortName: personalAwardTypes.awardShortName,
+      trophyImageUrl: personalAwardTypes.trophyImageUrl,
+    })
+    .from(personalAwards)
+    .leftJoin(
+  personalAwardTypes,
+  eq(personalAwards.awardTypeId, personalAwardTypes.id),
+)
+    .where(eq(personalAwards.teamId, teamId));
+}
+  async getPersonalAwardTypes(): Promise<PersonalAwardType[]> {
     return await db
       .select()
-      .from(personalAwards)
-      .where(eq(personalAwards.teamId, teamId));
+      .from(personalAwardTypes)
+      .orderBy(personalAwardTypes.awardName);
   }
-
   async createPersonalAward(award: InsertPersonalAward): Promise<PersonalAward> {
-    const [created] = await db
-      .insert(personalAwards)
-      .values(award)
-      .returning();
+  const [created] = await db
+    .insert(personalAwards)
+    .values(award)
+    .returning();
 
-    return created;
-  }
+  return created;
+}
+
+async deletePersonalAward(id: number): Promise<void> {
+  await db
+    .delete(personalAwards)
+    .where(eq(personalAwards.id, id));
+}
 
   async getTeamAwards(teamId: number): Promise<TeamAward[]> {
     return await db
@@ -377,13 +405,19 @@ async createTeamRecord(record: InsertTeamRecord): Promise<TeamRecord> {
   }
 
   async createTeamAward(award: InsertTeamAward): Promise<TeamAward> {
-    const [created] = await db
-      .insert(teamAwards)
-      .values(award)
-      .returning();
+  const [created] = await db
+    .insert(teamAwards)
+    .values(award)
+    .returning();
 
-    return created;
-  }
+  return created;
+}
+
+async deleteTeamAward(id: number): Promise<void> {
+  await db
+    .delete(teamAwards)
+    .where(eq(teamAwards.id, id));
+}
 
   async getDepthChartEntriesByTeam(teamId: number): Promise<DepthChartEntry[]> {
     return await db

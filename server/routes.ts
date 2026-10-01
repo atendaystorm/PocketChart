@@ -742,7 +742,22 @@ app.delete("/api/recruiting/players/:id", requireAuth, async (req, res) => {
     }
   });
 
-    // Personal awards routes
+    app.delete("/api/teams/:teamId/awards/team/:awardId", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteTeamAward(Number(req.params.awardId));
+      res.status(204).send();
+    } catch (err) {
+      console.error("Failed to delete team award:", err);
+      res.status(500).json({ message: "Failed to delete team award" });
+    }
+  });
+
+      // Personal awards routes
+  app.get("/api/personal-award-types", async (_req, res) => {
+    const awardTypes = await storage.getPersonalAwardTypes();
+    res.json(awardTypes);
+  });
+
   app.get("/api/teams/:teamId/awards/personal", async (req, res) => {
     const awards = await storage.getPersonalAwards(Number(req.params.teamId));
     res.json(awards);
@@ -751,10 +766,10 @@ app.delete("/api/recruiting/players/:id", requireAuth, async (req, res) => {
   app.post("/api/teams/:teamId/awards/personal", requireAuth, async (req, res) => {
     try {
       const bodySchema = z.object({
-        playerName: z.string().min(1),
-        award: z.string().min(1),
-        season: z.coerce.number().int().min(0),
-      });
+  playerName: z.string().min(1),
+  awardTypeId: z.coerce.number().int().positive(),
+  season: z.coerce.number().int().min(0),
+});
 
       const input = bodySchema.parse(req.body);
 
@@ -769,6 +784,16 @@ app.delete("/api/recruiting/players/:id", requireAuth, async (req, res) => {
         return res.status(400).json({ message: err.errors[0].message });
       }
       throw err;
+    }
+  });
+
+    app.delete("/api/teams/:teamId/awards/personal/:awardId", requireAuth, async (req, res) => {
+    try {
+      await storage.deletePersonalAward(Number(req.params.awardId));
+      res.status(204).send();
+    } catch (err) {
+      console.error("Failed to delete personal award:", err);
+      res.status(500).json({ message: "Failed to delete personal award" });
     }
   });
 

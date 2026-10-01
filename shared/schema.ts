@@ -91,6 +91,21 @@ export const teams = pgTable("teams", {
   coachRecords: text("coach_records").array().default(sql`'{}'::text[]`),
 });
 
+export const personalAwardTypes = pgTable("personal_award_types", {
+  id: serial("id").primaryKey(),
+  awardName: text("award_name").notNull().unique(),
+  awardShortName: text("award_short_name"),
+  trophyImageUrl: text("trophy_image_url").notNull(),
+});
+
+export const collegeTeamLogos = pgTable("college_team_logos", {
+  id: serial("id").primaryKey(),
+  schoolName: text("school_name").notNull().unique(),
+  abbreviation: text("abbreviation").notNull().unique(),
+  conference: text("conference").notNull(),
+  logoUrl: text("logo_url").notNull(),
+});
+
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull(),
@@ -233,9 +248,22 @@ export const playerStatsRelations = relations(playerStats, ({ one }) => ({
 }));
 
 export const insertTeamSchema = createInsertSchema(teams).omit({ id: true, userId: true });
+export const insertPersonalAwardTypeSchema = createInsertSchema(personalAwardTypes).omit({
+  id: true,
+});
+
+export type PersonalAwardType = typeof personalAwardTypes.$inferSelect;
+export type InsertPersonalAwardType = z.infer<typeof insertPersonalAwardTypeSchema>;
 export const insertMomentSchema = createInsertSchema(moments).omit({ id: true });
 export const insertSeasonRecordSchema = createInsertSchema(seasonRecords).omit({ id: true });
 export const insertDepthChartEntrySchema = createInsertSchema(depthChartEntries).omit({ id: true });
+
+export const insertCollegeTeamLogoSchema = createInsertSchema(collegeTeamLogos).omit({
+  id: true,
+});
+
+export type CollegeTeamLogo = typeof collegeTeamLogos.$inferSelect;
+export type InsertCollegeTeamLogo = z.infer<typeof insertCollegeTeamLogoSchema>;
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export type User = typeof users.$inferSelect;
@@ -328,7 +356,7 @@ export const personalAwards = pgTable("personal_awards", {
   id: serial("id").primaryKey(),
   teamId: integer("team_id").notNull(),
   playerName: text("player_name").notNull(),
-  award: varchar("award", { length: 100 }).notNull(),
+  awardTypeId: integer("award_type_id").notNull(),
   season: integer("season").notNull(),
 });
 
@@ -336,5 +364,9 @@ export const insertPersonalAwardSchema = createInsertSchema(personalAwards).omit
   id: true,
 });
 
-export type PersonalAward = typeof personalAwards.$inferSelect;
+export type PersonalAward = typeof personalAwards.$inferSelect & {
+  awardName?: string | null;
+  awardShortName?: string | null;
+  trophyImageUrl?: string | null;
+};
 export type InsertPersonalAward = z.infer<typeof insertPersonalAwardSchema>;

@@ -52,8 +52,7 @@ import { useAuth } from "@/context/auth-context";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { DEPTH_CHART_POSITIONS, type DepthChartEntry, type Moment, type Player, type SeasonRecord, type TeamRecord, type TeamAward, type PersonalAward } from "@shared/schema";
-
+import { DEPTH_CHART_POSITIONS, type DepthChartEntry, type Moment, type Player, type SeasonRecord, type TeamRecord, type TeamAward, type PersonalAward, type PersonalAwardType } from "@shared/schema";
 function MomentCard({ moment, isAdmin, teamId }: { moment: Moment; isAdmin: boolean; teamId: number }) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
@@ -533,7 +532,7 @@ const { toast } = useToast();
   const [teamAwardScore, setTeamAwardScore] = useState("");
   const [teamAwardSeason, setTeamAwardSeason] = useState("");
   const [personalAwardPlayer, setPersonalAwardPlayer] = useState("");
-  const [personalAwardName, setPersonalAwardName] = useState("");
+  const [personalAwardTypeId, setPersonalAwardTypeId] = useState("");
   const [personalAwardSeason, setPersonalAwardSeason] = useState("");
   const [isAddRecordOpen, setIsAddRecordOpen] = useState(false);
   const [recordType, setRecordType] = useState("");
@@ -818,17 +817,28 @@ const updateRecruitingPlayer = useMutation({
     },
   });
 
-    const { data: personalAwards = [] } = useQuery<PersonalAward[]>({
-    queryKey: ["/api/teams", id, "awards", "personal"],
-    enabled: !!id,
-    queryFn: async () => {
-      const response = await fetch(`/api/teams/${id}/awards/personal`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch personal awards");
-      }
-      return response.json();
-    },
-  });
+const { data: personalAwards = [] } = useQuery<PersonalAward[]>({
+  queryKey: ["/api/teams", id, "awards", "personal"],
+  enabled: !!id,
+  queryFn: async () => {
+    const response = await fetch(`/api/teams/${id}/awards/personal`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch personal awards");
+    }
+    return response.json();
+  },
+});
+
+const { data: personalAwardTypes = [] } = useQuery<PersonalAwardType[]>({
+  queryKey: ["/api/personal-award-types"],
+  queryFn: async () => {
+    const response = await fetch("/api/personal-award-types");
+    if (!response.ok) {
+      throw new Error("Failed to fetch personal award types");
+    }
+    return response.json();
+  },
+});
 
   const { data: teamSeasonRecords = [] } = useQuery<TeamRecord[]>({
     queryKey: ["/api/teams", id, "records", "Season"],
@@ -1999,32 +2009,111 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
     </CardHeader>
 
         <CardContent className="pt-6">
-      {teamAwards.length > 0 ? (
-        <div className="space-y-3">
-          {teamAwards.map((award) => (
-            <div
-              key={award.id}
-              className="rounded-lg border p-4 flex items-center justify-between gap-4"
-            >
-              <div>
-                <h3 className="font-semibold">{award.awardType}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {award.opponent} • {award.finalScore}
-                </p>
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">
-                {award.season}
-              </span>
-            </div>
-          ))}
+  {teamAwards.length > 0 ? (
+    <div className="space-y-8">
+      {Object.entries(
+        [...teamAwards]
+          .sort((a, b) => a.season - b.season)
+          .reduce<Record<number, typeof teamAwards>>((groups, award) => {
+            if (!groups[award.season]) {
+              groups[award.season] = [];
+            }
+            groups[award.season].push(award);
+            return groups;
+          }, {})
+      ).map(([season, awards]) => (
+        <div key={season} className="space-y-3">
+          <h3 className="text-lg font-bold text-display tracking-wide border-b pb-2">
+            {season}
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {awards.map((award) => (
+              <div
+  key={award.id}
+  className="rounded-lg border p-4 flex items-center justify-between gap-4"
+>
+  <div>
+    <h3 className="font-semibold">{award.awardType}</h3>
+    <p className="text-sm text-muted-foreground">
+      {award.opponent} • {award.finalScore}
+    </p>
+  </div>
+
+  {isAdmin && (
+  <AlertDialog>
+    <AlertDialogTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+        aria-label="Delete team award"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </AlertDialogTrigger>
+
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This will permanently delete this team award. This cannot be undone.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+          onClick={async () => {
+            try {
+              const response = await fetch(
+                `/api/teams/${id}/awards/team/${award.id}`,
+                {
+                  method: "DELETE",
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error("Failed to delete team award");
+              }
+
+              queryClient.invalidateQueries({
+                queryKey: ["/api/teams", id, "awards", "team"],
+              });
+
+              toast({
+                title: "Award deleted",
+                description: "The team award has been deleted successfully.",
+              });
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to delete the team award.",
+                variant: "destructive",
+              });
+            }
+          }}
+        >
+          Delete
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+)}
+</div>
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="py-10 text-center text-muted-foreground">
-          <Trophy className="h-10 w-10 mx-auto mb-3 opacity-20" />
-          <p className="font-medium">No team awards recorded yet.</p>
-        </div>
-      )}
-    </CardContent>
+      ))}
+    </div>
+  ) : (
+    <div className="py-10 text-center text-muted-foreground">
+      <Trophy className="h-10 w-10 mx-auto mb-3 opacity-20" />
+      <p className="font-medium">No team awards recorded yet.</p>
+    </div>
+  )}
+</CardContent>
   </Card>
 
   <Dialog open={isAddTeamAwardOpen} onOpenChange={setIsAddTeamAwardOpen}>
@@ -2162,24 +2251,122 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
       </div>
     </CardHeader>
 
-    <CardContent className="pt-6">
+<CardContent className="pt-6">
   {personalAwards.length > 0 ? (
-    <div className="space-y-3">
-      {personalAwards.map((award) => (
-        <div
-          key={award.id}
-          className="rounded-lg border p-4 flex items-center justify-between gap-4"
+    <div className="space-y-4">
+      {Object.entries(
+        [...personalAwards]
+          .sort((a, b) => b.season - a.season)
+          .reduce<Record<number, typeof personalAwards>>((groups, award) => {
+            if (!groups[award.season]) {
+              groups[award.season] = [];
+            }
+            groups[award.season].push(award);
+            return groups;
+          }, {})
+      ).map(([season, awards]) => (
+        <details
+          key={season}
+          open
+          className="group rounded-lg border"
         >
-          <div>
-            <h3 className="font-semibold">{award.playerName}</h3>
-            <p className="text-sm text-muted-foreground">
-              {award.award}
-            </p>
+          <summary className="cursor-pointer list-none px-4 py-3 font-bold text-display tracking-wide flex items-center justify-between">
+            <span>{season}</span>
+            <span className="text-muted-foreground text-sm group-open:rotate-180 transition-transform">
+              ▼
+            </span>
+          </summary>
+
+          <div className="border-t p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {awards.map((award) => (
+                <div
+  key={award.id}
+  className="rounded-lg border p-4 flex items-center justify-between gap-4"
+>
+  <div className="min-w-0">
+    <h3 className="font-semibold">{award.playerName}</h3>
+    <p className="text-sm text-muted-foreground mt-1">
+      {award.awardName}
+    </p>
+  </div>
+
+  <div className="flex items-center gap-2 shrink-0">
+    {award.trophyImageUrl && (
+      <img
+        src={award.trophyImageUrl}
+        alt={award.awardName ?? "Personal award"}
+        className="h-24 w-24 object-contain"
+      />
+    )}
+
+    {isAdmin && (
+  <AlertDialog>
+    <AlertDialogTrigger asChild>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+        aria-label="Delete personal award"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </AlertDialogTrigger>
+
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          This will permanently delete this personal award. This cannot be undone.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+          onClick={async () => {
+            try {
+              const response = await fetch(
+                `/api/teams/${id}/awards/personal/${award.id}`,
+                {
+                  method: "DELETE",
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error("Failed to delete personal award");
+              }
+
+              queryClient.invalidateQueries({
+                queryKey: ["/api/teams", id, "awards", "personal"],
+              });
+
+              toast({
+                title: "Award deleted",
+                description: "The personal award has been deleted successfully.",
+              });
+            } catch (error) {
+              toast({
+                title: "Error",
+                description: "Failed to delete the personal award.",
+                variant: "destructive",
+              });
+            }
+          }}
+        >
+          Delete
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+)}
+  </div>
+</div>
+              ))}
+            </div>
           </div>
-          <span className="text-sm font-medium text-muted-foreground">
-            {award.season}
-          </span>
-        </div>
+        </details>
       ))}
     </div>
   ) : (
@@ -2189,6 +2376,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
     </div>
   )}
 </CardContent>
+
 </Card>
 
   <Dialog open={isAddPersonalAwardOpen} onOpenChange={setIsAddPersonalAwardOpen}>
@@ -2210,13 +2398,23 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
         </div>
 
         <div>
-          <Label>Award</Label>
-          <Input
-  placeholder="e.g. Conference MVP"
-  value={personalAwardName}
-  onChange={(e) => setPersonalAwardName(e.target.value)}
-/>
-        </div>
+  <Label>Award</Label>
+  <Select
+    value={personalAwardTypeId}
+    onValueChange={setPersonalAwardTypeId}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select an award" />
+    </SelectTrigger>
+    <SelectContent>
+      {personalAwardTypes.map((awardType) => (
+        <SelectItem key={awardType.id} value={String(awardType.id)}>
+          {awardType.awardName}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
 
         <div>
           <Label>Season</Label>
@@ -2238,10 +2436,10 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          playerName: personalAwardPlayer,
-          award: personalAwardName,
-          season: Number(personalAwardSeason),
-        }),
+  playerName: personalAwardPlayer,
+  awardTypeId: Number(personalAwardTypeId),
+  season: Number(personalAwardSeason),
+}),
       });
 
       if (!response.ok) {
@@ -2250,7 +2448,7 @@ const [duplicateDestinationSeason, setDuplicateDestinationSeason] = useState("")
 
       setIsAddPersonalAwardOpen(false);
       setPersonalAwardPlayer("");
-      setPersonalAwardName("");
+      setPersonalAwardTypeId("");
       setPersonalAwardSeason("");
             queryClient.invalidateQueries({
         queryKey: ["/api/teams", id, "awards", "personal"],
